@@ -11,9 +11,9 @@
  * Minimum size of a valid RX command packet (header + frame_size + cmd + footer). This
  * doesn't take into consideration the variable-length frame_data.
  */
-#define MIN_RX_PACKET_SIZE (sizeof(((ld2420_command_packet_t *)0)->HEADER) +    \
-                            sizeof(unsigned short) + sizeof(ld2420_command_t) + \
-                            sizeof(((ld2420_command_packet_t *)0)->FOOTER))
+#define LD2420_MIN_RX_PACKET_SIZE (sizeof(((ld2420_command_packet_t *)0)->HEADER) +    \
+                                   sizeof(unsigned short) + sizeof(ld2420_command_t) + \
+                                   sizeof(((ld2420_command_packet_t *)0)->FOOTER))
 
 /**
  * The header bytes for sending a command packet to the LD2420 module. This is documented

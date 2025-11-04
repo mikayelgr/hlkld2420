@@ -42,7 +42,7 @@ static bool __validate_rx_packet__(ld2420_command_packet_t *packet)
  */
 ld2420_command_packet_t *ld2420_parse_rx_command_packet(unsigned char *buffer, size_t buffer_size)
 {
-    if (buffer == NULL || buffer_size < MIN_RX_PACKET_SIZE)
+    if (buffer == NULL || buffer_size < LD2420_MIN_RX_PACKET_SIZE)
     {
         return NULL;
     }
