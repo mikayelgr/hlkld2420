@@ -1,12 +1,11 @@
 #pragma once
-#include <hardware/uart.h>
-#include <stdlib.h>
-
-#include "ld2420/ld2420.h"
-
 #ifndef LD2420_WITH_PICO
 #error "LD2420_WITH_PICO must be defined to use this header"
 #endif
+
+#include <hardware/uart.h>
+#include <stdlib.h>
+#include "ld2420/ld2420.h"
 
 #ifdef __cplusplus
 extern "C"

@@ -31,16 +31,22 @@ static const unsigned char LD2420_END_COMMAND_PACKET[4] = {04, 03, 02, 01};
 extern "C"
 {
 #endif
+    /**
+     * @brief Enumeration of command IDs for the LD2420 module.
+     */
     typedef enum
     {
-        LD2420_CMD_OPEN_MODE = (unsigned short)0xFF,
-        LD2420_CMD_CLOSE_MODE = (unsigned short)0xFE,
+        LD2420_CMD_OPEN_CONFIG_MODE = (unsigned short)0xFF,
+        LD2420_CMD_CLOSE_CONFIG_MODE = (unsigned short)0xFE,
         LD2420_CMD_READ_VERSION = (unsigned short)0x00,
         LD2420_CMD_REBOOT = (unsigned short)0x68,
         LD2420_CMD_READ_CONFIG = (unsigned short)0x08,
         LD2420_CMD_SET_CONFIG = (unsigned short)0x07,
     } ld2420_command_t;
 
+    /**
+     * @brief Enumeration of command parameter IDs for the LD2420 module.
+     */
     typedef enum
     {
         LD2420_PARAM_MIN_DISTANCE = (unsigned short)0x00,
@@ -85,7 +91,30 @@ extern "C"
     } ld2420_command_packet_t;
 
     /**
+     * @brief A single parameter block for a command passable to the LD2420 module.
+     */
+    typedef struct
+    {
+        /**
+         * The parameter ID (2 bytes). Usually, this represents the band/channel number
+         * for which the parameter is being set or read.
+         */
+        unsigned short param_id;
+
+        /**
+         * The parameter value (4 bytes). This will typically be used in contexts when we are
+         * writing configuration parameters to the LD2420 module, specifically, for the
+         * "Set-up module configuration parameters" command (0x07).
+         */
+        unsigned int value;
+    } ld2420_command_param_block_t;
+
+    /**
      * @brief Creates and initializes a transmit command packet for the LD2420 module.
+     * @param cmd The command
+     * @param frame_data Pointer to the frame data payload (can be NULL if frame_size is 0)
+     * @param frame_size Size of the frame data in bytes
+     * @return Pointer to the allocated command packet, or NULL on failure.
      */
     ld2420_command_packet_t *ld2420_create_tx_command_packet(
         ld2420_command_t cmd,
@@ -95,12 +124,16 @@ extern "C"
     /**
      * @brief Given a buffer, parses the RX packet sent from the LD2420 module and parses it
      *        as an rx command packet.
+     * @param buffer Pointer to the buffer containing the received data
+     * @param buffer_size Size of the buffer in bytes
+     * @return Pointer to the allocated command packet, or NULL on failure.
      */
     ld2420_command_packet_t *ld2420_parse_rx_command_packet(
         unsigned char *buffer, size_t buffer_size);
 
     /**
      * @brief Frees the memory allocated for a command packet.
+     * @param packet Pointer to the command packet to free.
      */
     void ld2420_free_command_packet(ld2420_command_packet_t *packet);
 #ifdef __cplusplus
