@@ -1,4 +1,5 @@
-#include "ld2420/ld2420_pico.h"
+#include "ld2420/platform/pico/ld2420_pico.h"
+#include <hardware/uart.h>
 #include <hardware/gpio.h>
 
 #ifdef __cplusplus

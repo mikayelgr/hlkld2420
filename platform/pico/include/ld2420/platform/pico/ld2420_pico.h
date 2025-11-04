@@ -1,7 +1,4 @@
 #pragma once
-#ifndef LD2420_WITH_PICO
-#error "LD2420_WITH_PICO must be defined to use this header"
-#endif
 
 #include <hardware/uart.h>
 #include <stdlib.h>

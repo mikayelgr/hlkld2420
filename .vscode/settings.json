@@ -1,3 +1,9 @@
 {
-  "C_Cpp.default.compileCommands": "./build/compile_commands.json"
+  "C_Cpp.default.compileCommands": ["./build/compile_commands.json"],
+  "files.associations": {
+    "ld2420.h": "c",
+    "ld2420_pico.h": "c",
+    "gpio.h": "c"
+  },
+  "C_Cpp.default.includePath": ["${env:PICO_SDK_PATH}/**", "${workspaceFolder}/**" ]
 }

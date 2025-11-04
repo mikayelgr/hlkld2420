@@ -1,21 +1,25 @@
 cmake_minimum_required(VERSION 3.16)
 
-option(LD2420_WITH_HOST "Build for Host" ON)
-option(LD2420_WITH_PICO "Build for Raspberry Pi Pico" OFF)
+project(hlkld2420 C CXX ASM)
 
-if (LD2420_WITH_PICO)
-    message(STATUS "Platform target `Raspberry Pi Pico` has been enabled...")
-    include(pico_sdk_import.cmake)
-    pico_sdk_init()
-elseif(LD2420_WITH_HOST)
-    message(STATUS "Platform target `Host` has been enabled...")
+add_library(ld2420_iface INTERFACE)
+target_include_directories(ld2420_iface INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include> # Used when the library is installed
+)
+
+install(
+    DIRECTORY include/
+    DESTINATION include/
+)
+
+# Adding the src directory as core library when compiling
+add_subdirectory(src core)
+
+# Pico SDK setup
+if(DEFINED PICO_SDK_PATH)
+    message(STATUS "PICO_SDK_PATH is ${PICO_SDK_PATH}")
+    add_subdirectory(platform/pico)
 else()
-    message(FATAL_ERROR "Either `LD2420_WITH_PICO` or `LD2420_WITH_HOST` must be set to ON")
+    message(WARNING "Pico SDK path not found. Skipping Pico build.")
 endif()
-
-project(ld2420 LANGUAGES C CXX ASM)
-add_library(ld2420 src/ld2420.c src/ld2420_pico.c)
-target_include_directories(ld2420 PUBLIC include/)
-add_compile_options(-mlittle-endian)
-target_link_libraries(ld2420 PUBLIC pico_stdlib hardware_uart)
-target_compile_definitions(ld2420 PUBLIC LD2420_WITH_PICO LD2420_WITH_HOST)
