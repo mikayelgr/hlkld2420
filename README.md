@@ -2,12 +2,19 @@
 
 This repository provides a library for interfacing with the HLK-LD2420 radar module. The library is designed to be lightweight and easy to integrate into projects using the Raspberry Pi Pico or other platforms, not necessarily based on the RP2040 SoC.
 
+<div style="display:flex;justify-content:between;gap:5px">
+<p>The specific module that this library covers is outlined in the picture (LD2420). It supports 15 range gates, in 0.7 meter increments. The module covers distances from 0.2m ~ 8m, for that reason, the recommended maximum range gate is <code>10</code>.
+<br/>
+<br/>
+Note: The official configuration/calibration tooling is for Windows-based systems only. Once the basis of this project is finished, I may start working on a web-based platform for configuring this module with any device.
+</p>
+<img src="./docs/module-outlined-table.png" height="200" />
+</div>
+
 | Resource Name | Resource URL |
 |---|---|
 |Sensor Description|<https://www.hlktech.net/index.php?id=1291>|
 |Sensor Documentation, Tooling, and Protocol Description|<https://drive.google.com/drive/folders/1IggDH6ejNSOs8EklQbAXcqUI7KENSZLt>|
-
-> Note: The official configuration/calibration tooling is for Windows-based systems only. Once the basis of this project is finished, I may start working on a web-based platform for configuring this module with any device.
 
 ## Target Support Status
 
