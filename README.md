@@ -1,5 +1,7 @@
 # HLK-LD2420 C Library
 
+> Important: the project is currently unstable with a lot of changes being made to the core API. Since platform specific-APIs depend on the core, you can expect everything to stabilize as the core APIs improve.
+
 This repository provides a library for interfacing with the HLK-LD2420 radar module. The library is designed to be lightweight and easy to integrate into projects using the Raspberry Pi Pico or other platforms, not necessarily based on the RP2040 SoC.
 
 The specific module that this library covers is outlined in the picture (LD2420). It supports 15 range gates, in 0.7 meter increments. The module covers distances from 0.2m ~ 8m, for that reason, the recommended maximum range gate is `10`. This also ensures that the gathered data contains less noise and is more accurate overall.
@@ -15,10 +17,10 @@ The specific module that this library covers is outlined in the picture (LD2420)
 
 ## Target Support Status
 
-| Target | Status |
-| ------ | --------- |
-| Native (defaults to host's machine) | Supported |
-|Raspberry Pi Pico | In Progress |
+| Target | Status | API Stability Status |
+| ------ | --------- | --- |
+| Native (defaults to host's machine) | Supported | Unstable |
+|Raspberry Pi Pico | In Progress | Unstable |
 
 > The native target is useful for developing tooling around the HLK-LD2420 sensor which would run locally on your device, such as a command-line tool for interacting with /dev/tty interfaces exposed by this device.
 
