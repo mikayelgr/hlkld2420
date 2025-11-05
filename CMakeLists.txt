@@ -16,10 +16,17 @@ install(
 # Adding the src directory as core library when compiling
 add_subdirectory(src core)
 
-# Pico SDK setup
-if(DEFINED PICO_SDK_PATH)
+# Pico platform support
+if(CMAKE_SYSTEM_NAME STREQUAL "PICO")
+    if (NOT DEFINED PICO_SDK_PATH)
+        set(PICO_SDK_PATH $ENV{PICO_SDK_PATH} CACHE PATH "Path to the Pico SDK" FORCE)
+    endif()
+
+    if (NOT DEFINED PICO_SDK_PATH)
+        message(FATAL_ERROR "PICO_SDK_PATH environment variable is not set. Please set it to the path of the Pico SDK.")
+    endif()
     message(STATUS "PICO_SDK_PATH is ${PICO_SDK_PATH}")
     add_subdirectory(platform/pico)
 else()
-    message(WARNING "Pico SDK path not found. Skipping Pico build.")
+    message(STATUS "Pico SDK path not set. Skipping Pico build.")
 endif()

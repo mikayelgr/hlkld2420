@@ -1,3 +1,4 @@
+# Including and initializing the Pico SDK, which exposes all the necessary targets and libraries
 include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 pico_sdk_init()
 
