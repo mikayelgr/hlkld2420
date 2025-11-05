@@ -15,7 +15,7 @@ The specific module that this library covers is outlined in the picture (LD2420)
 
 ## Target Support Status
 
-| Target | Supported |
+| Target | Status |
 | ------ | --------- |
 | Native (defaults to host's machine) | Supported |
 |Raspberry Pi Pico | In Progress |
