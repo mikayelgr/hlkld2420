@@ -54,16 +54,34 @@ cd hlkld2420
 
 ### Building the Library
 
-When building the library, you are going to have two platform choices for now
+When building the library, you are going to have two platform choices for now:
 
-- Native (default) - Sets the target platform as your machine
-- Raspberry Pi Pico - When you want to call this library from your Pico project
+- **Native (default)** - Sets the target platform as your machine
+- **Raspberry Pi Pico** - When you want to call this library from your Pico project
 
-Build steps for each of the supported platforms is documented in the corresponding files which you can find in the table.
+The project uses CMake presets for simplified building. To see all available presets:
+
+```bash
+# List all available configure presets
+cmake --list-presets
+
+# List all available build presets
+cmake --build --list-presets
+```
+
+Then configure and build using your chosen preset:
+
+```bash
+# Example: Native release build
+cmake --preset native-release
+cmake --build --preset native-release
+```
+
+Detailed build steps for each of the supported platforms is documented in the corresponding files which you can find in the table.
 
 | Target | Build Process Reference |
 | ------ | ------------- |
-| Native | [Documentation](./src/README.md) |
+| Native | [Documentation](./core/README.md) |
 | Raspberry Pi Pico | [Documentation](./platform/pico/README.md) |
 
 ## API Documentation

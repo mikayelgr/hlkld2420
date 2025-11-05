@@ -14,7 +14,7 @@ install(
 )
 
 # Adding the src directory as core library when compiling
-add_subdirectory(src core)
+add_subdirectory(core)
 
 # Pico platform support
 if(CMAKE_SYSTEM_NAME STREQUAL "PICO")
