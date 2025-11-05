@@ -15,7 +15,7 @@ The specific module that this library covers is outlined in the picture (LD2420)
 |Sensor Description|<https://www.hlktech.net/index.php?id=1291>|
 |Sensor Documentation, Tooling, and Protocol Description|<https://drive.google.com/drive/folders/1IggDH6ejNSOs8EklQbAXcqUI7KENSZLt>|
 
-## Target Support Status
+## Platform Support Status
 
 | Target | Status | API Stability Status |
 | ------ | --------- | --- |
