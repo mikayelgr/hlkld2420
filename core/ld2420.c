@@ -63,6 +63,8 @@ ld2420_command_packet_t *ld2420_parse_rx_command_packet(unsigned char *buffer, s
     memcpy(&packet->cmd, buffer + offset, sizeof(packet->cmd));
     offset += sizeof(packet->cmd);
 
+    // By default frame data is NULL
+    packet->frame_data = NULL;
     // Now that we know frame_size, check if buffer is large enough (optional, if buffer length is available)
     if (packet->frame_size > 0)
     {
@@ -75,10 +77,6 @@ ld2420_command_packet_t *ld2420_parse_rx_command_packet(unsigned char *buffer, s
 
         memcpy(packet->frame_data, buffer + offset, packet->frame_size);
         offset += packet->frame_size;
-    }
-    else
-    {
-        packet->frame_data = NULL;
     }
 
     memcpy(packet->FOOTER, buffer + offset, sizeof(packet->FOOTER));
@@ -116,6 +114,7 @@ ld2420_command_packet_t *ld2420_create_tx_command_packet(
     packet->frame_size = frame_size;
     packet->cmd = cmd;
 
+    packet->frame_data = NULL;
     if (frame_size > 0)
     {
         packet->frame_data = (unsigned char *)malloc(frame_size);
@@ -125,10 +124,6 @@ ld2420_command_packet_t *ld2420_create_tx_command_packet(
             return NULL;
         }
         memcpy(packet->frame_data, frame_data, frame_size);
-    }
-    else
-    {
-        packet->frame_data = NULL;
     }
 
     return packet;
