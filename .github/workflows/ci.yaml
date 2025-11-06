@@ -3,6 +3,15 @@ on:
     push:
         branches:
             - main
+        paths:
+            - 'core/**'
+            - 'include/**'
+            - 'platform/**'
+            - 'tests/**'
+            - 'CMakeLists.txt'
+            - 'CMakePresets.json'
+            - 'cmake/**'
+            - '.github/workflows/ci.yaml'
 
 jobs:
     test:

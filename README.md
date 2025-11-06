@@ -1,3 +1,5 @@
+[![CI](https://github.com/mikayelgr/hlkld2420/actions/workflows/ci.yaml/badge.svg)](https://github.com/mikayelgr/hlkld2420/actions/workflows/ci.yaml)
+
 # HLK-LD2420 C Library
 
 > Important: the project is currently unstable with a lot of changes being made to the core API. Since platform specific-APIs depend on the core, you can expect everything to stabilize as the core APIs improve.

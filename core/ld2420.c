@@ -86,7 +86,7 @@ ld2420_command_packet_t *ld2420_create_tx_command_packet(
     unsigned char *frame_data,
     unsigned short frame_size)
 {
-    if (frame_size > 0 && frame_data == NULL)
+    if (frame_size < 0 || (frame_size > 0 && frame_data == NULL))
     {
         // Invalid input: nonzero frame_size but no data
         return NULL;
