@@ -1,0 +1,16 @@
+name: CI
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        name: Build and Run Native Tests
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v2
+            - run: sudo apt-get install cmake build-essential
+            - name: Build and run tests
+              run: cmake --preset native-debug && cmake --build --preset native-debug && ctest --preset native-debug --output-on-failure
