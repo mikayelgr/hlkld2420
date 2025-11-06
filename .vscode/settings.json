@@ -1,4 +1,7 @@
 {
   "C_Cpp.default.compileCommands": ["./build/compile_commands.json"],
-  "C_Cpp.default.includePath": ["${env:PICO_SDK_PATH}/**", "${workspaceFolder}/**" ],
+  "C_Cpp.default.includePath": [
+    "${env:PICO_SDK_PATH}/**",
+    "${workspaceFolder}/**"
+  ]
 }
