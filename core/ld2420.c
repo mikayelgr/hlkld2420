@@ -30,16 +30,6 @@ static bool __validate_rx_packet__(ld2420_command_packet_t *packet)
     return (header_cmp == 0 && footer_cmp == 0);
 }
 
-/**
- * Parses a received command packet from the given buffer. The function assumes that the pointer to
- * the provided buffer is a full packet, which has been obtained by reading the header and frame_size
- * data from a UART or other communication interface first.
- *
- * @param buffer Pointer to the buffer containing the received packet data.
- * @return Pointer to the parsed ld2420_command_packet_t structure, or NULL on failure.
- *
- * Note: This function now checks for NULL buffer and minimum buffer size.
- */
 ld2420_command_packet_t *ld2420_parse_rx_command_packet(unsigned char *buffer, size_t buffer_size)
 {
     if (buffer == NULL || buffer_size < LD2420_MIN_RX_PACKET_SIZE)
