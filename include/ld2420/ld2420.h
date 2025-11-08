@@ -33,6 +33,7 @@ extern "C"
 #endif
     typedef enum
     {
+        LD2420_ERROR_INVALID_PACKET,
         LD2420_ERROR_INVALID_BUFFER,
         LD2420_ERROR_INVALID_BUFFER_SIZE,
         LD2420_ERROR_INVALID_FRAME,
@@ -68,6 +69,8 @@ extern "C"
 
     /**
      * @brief Structure representing a transmit command packet for the LD2420 module.
+     * @note UPPERCASE field names are used to indicate that these fields are constant,
+     *       are instantiated automatically, and should not be modified after initialization.
      */
     typedef struct
     {
@@ -128,9 +131,23 @@ extern "C"
      * @return Pointer to the allocated command packet, or NULL on failure.
      */
     ld2420_command_packet_t *ld2420_create_tx_command_packet(
-        ld2420_command_t cmd,
-        unsigned char *frame_data,
-        unsigned short frame_size,
+        const ld2420_command_t cmd,
+        const unsigned char *frame_data,
+        const unsigned short frame_size,
+        ld2420_status_t *status_ref);
+
+    /**
+     * @brief Serializes a command packet into a byte buffer suitable for transmission.
+     * @param packet Pointer to the command packet to serialize.
+     * @param out_size Pointer to a size_t variable to capture the size of the output
+     *                 buffer (can be NULL if size is not needed).
+     * @param status_ref Pointer to a status variable to capture error codes (can be NULL)
+     * @return Pointer to the allocated byte buffer containing the serialized packet,
+     *         or NULL on failure.
+     */
+    unsigned char *ld2420_serialize_command_packet(
+        const ld2420_command_packet_t *packet,
+        size_t *out_size,
         ld2420_status_t *status_ref);
 
     /**
@@ -144,7 +161,9 @@ extern "C"
      *       echo of the command.
      */
     ld2420_command_packet_t *ld2420_parse_rx_command_packet(
-        unsigned char *buffer, size_t buffer_size, ld2420_status_t *status_ref);
+        const unsigned char *buffer,
+        const size_t buffer_size,
+        ld2420_status_t *status_ref);
 
     /**
      * @brief Frees the memory allocated for a command packet.
