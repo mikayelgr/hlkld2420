@@ -20,7 +20,7 @@
  *
  * @param packet Pointer to the ld2420_command_packet_t to initialize.
  */
-static void __initialize_packet_header_and_footer__(const ld2420_command_packet_t *packet)
+static void __initialize_packet_header_and_footer__(ld2420_command_packet_t *packet)
 {
     memcpy(packet->HEADER, LD2420_BEG_COMMAND_PACKET, sizeof(packet->HEADER));
     memcpy(packet->FOOTER, LD2420_END_COMMAND_PACKET, sizeof(packet->FOOTER));
