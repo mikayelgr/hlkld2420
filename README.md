@@ -93,6 +93,30 @@ The API is fully documented in the source code headers:
 - Core API: [`include/ld2420/ld2420.h`](include/ld2420/ld2420.h)
 - Raspberry Pi Pico implementation: [`platform/pico/include/ld2420/platform/pico/ld2420_pico.h`](platform/pico/include/ld2420/platform/pico/ld2420_pico.h)
 
+### Constraints
+
+To ensure efficient memory usage, the library exposes a few useful constants which are computed from the official protocol documentation. They are documented below.
+
+#### Minimum Receive (RX) Packet Size
+
+- `LD2420_MIN_RX_PACKET_SIZE` - core constant
+
+The minimum size for a packet received (RX) from the sensor is **14 bytes**. This minimum size occurs for simple acknowledgment packets, such as "Response successful", which contain no parameter data. Based on the "Receive Command Component" structure defined in the protocol[cite: 6], the packet is composed of the following:
+
+- **Packet Header**: 4 bytes
+- **Data Length**: 2 bytes
+- **In-frame Data**: 4 bytes (This is the minimal payload: a 2-byte original command echo + 2-byte return value/status)
+- **End of Packet**: 4 bytes
+
+The total size is calculated as:
+
+$$
+\underbrace{4 \text{ bytes}}_{\text{Header}} +
+\underbrace{2 \text{ bytes}}_{\text{Length}} +
+\underbrace{4 \text{ bytes}}_{\text{Min. RX Data}} +
+\underbrace{4 \text{ bytes}}_{\text{Footer}} = 14 \text{ bytes}
+$$
+
 ## Adding the Library to Another Project
 
 To use the HLK-LD2420 library in your own project, you can fetch it directly from the GitHub repository using CMake's `FetchContent` module.
