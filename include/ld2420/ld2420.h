@@ -31,6 +31,16 @@ static const unsigned char LD2420_END_COMMAND_PACKET[4] = {04, 03, 02, 01};
 extern "C"
 {
 #endif
+    typedef enum
+    {
+        LD2420_ERROR_INVALID_BUFFER,
+        LD2420_ERROR_INVALID_BUFFER_SIZE,
+        LD2420_ERROR_INVALID_FRAME,
+        LD2420_ERROR_INVALID_FRAME_SIZE,
+        LD2420_ERROR_MEMORY_ALLOCATION_FAILED,
+        LD2420_ERROR_INVALID_HEADER_OR_FOOTER,
+    } ld2420_status_t;
+
     /**
      * @brief Enumeration of command IDs for the LD2420 module.
      */
@@ -114,22 +124,27 @@ extern "C"
      * @param cmd The command
      * @param frame_data Pointer to the frame data payload (can be NULL if frame_size is 0)
      * @param frame_size Size of the frame data in bytes
+     * @param status_ref Pointer to a status variable to capture error codes (can be NULL)
      * @return Pointer to the allocated command packet, or NULL on failure.
      */
     ld2420_command_packet_t *ld2420_create_tx_command_packet(
         ld2420_command_t cmd,
         unsigned char *frame_data,
-        unsigned short frame_size);
+        unsigned short frame_size,
+        ld2420_status_t *status_ref);
 
     /**
      * @brief Given a buffer, parses the RX packet sent from the LD2420 module and parses it
      *        as an rx command packet.
      * @param buffer Pointer to the buffer containing the received data
      * @param buffer_size Size of the buffer in bytes
+     * @param status_ref Pointer to a status variable to capture error codes (can be NULL)
      * @return Pointer to the allocated command packet, or NULL on failure.
+     * @note RX packets will always contain 2 additional bytes as response padding after the
+     *       echo of the command.
      */
     ld2420_command_packet_t *ld2420_parse_rx_command_packet(
-        unsigned char *buffer, size_t buffer_size);
+        unsigned char *buffer, size_t buffer_size, ld2420_status_t *status_ref);
 
     /**
      * @brief Frees the memory allocated for a command packet.

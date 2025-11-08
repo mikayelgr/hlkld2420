@@ -6,6 +6,15 @@
 #include "ld2420/ld2420.h"
 
 /**
+ * An internal macro to set the state of the LD2420 device.
+ */
+#define __LD2420_FN_SET_STATE__(state_ptr, new_state) \
+    if (state_ptr != NULL)                            \
+    {                                                 \
+        *(state_ptr) = new_state;                     \
+    }
+
+/**
  * @brief Initializes the HEADER and FOOTER fields of the given packet with
  *        the default values. The function assumes that the packet is never NULL.
  *
@@ -30,16 +39,24 @@ static bool __validate_rx_packet__(ld2420_command_packet_t *packet)
     return (header_cmp == 0 && footer_cmp == 0);
 }
 
-ld2420_command_packet_t *ld2420_parse_rx_command_packet(unsigned char *buffer, size_t buffer_size)
+ld2420_command_packet_t *ld2420_parse_rx_command_packet(
+    unsigned char *buffer,
+    size_t buffer_size,
+    ld2420_status_t *status_ref)
 {
-    if (buffer == NULL || buffer_size < LD2420_MIN_RX_PACKET_SIZE)
+    if ((buffer == NULL) || (buffer_size < LD2420_MIN_RX_PACKET_SIZE))
     {
+        // In case the user wants to handle the error codes manually from their side as well,
+        // we are setting the error and then returning NULL as the actual command packet
+        // which indicates failure.
+        __LD2420_FN_SET_STATE__(status_ref, LD2420_ERROR_INVALID_BUFFER | LD2420_ERROR_INVALID_BUFFER_SIZE);
         return NULL;
     }
 
     ld2420_command_packet_t *packet = (ld2420_command_packet_t *)malloc(sizeof(ld2420_command_packet_t));
     if (packet == NULL)
     {
+        __LD2420_FN_SET_STATE__(status_ref, LD2420_ERROR_MEMORY_ALLOCATION_FAILED);
         return NULL;
     }
 
@@ -55,25 +72,36 @@ ld2420_command_packet_t *ld2420_parse_rx_command_packet(unsigned char *buffer, s
 
     // By default frame data is NULL
     packet->frame_data = NULL;
+
     // Now that we know frame_size, check if buffer is large enough (optional, if buffer length is available)
     if (packet->frame_size > 0)
     {
+        // Attempting to allocate a buffer for the backets internal frame data given the
+        // known frame size.
         packet->frame_data = (unsigned char *)malloc(packet->frame_size);
         if (packet->frame_data == NULL)
         {
+            __LD2420_FN_SET_STATE__(status_ref, LD2420_ERROR_MEMORY_ALLOCATION_FAILED);
             free(packet);
             return NULL;
         }
 
+        // Copying the frame data to the actual packet for a valid structure and
+        // increasing the offset. This needs to be done in the end to ensure
+        // correctness.
         memcpy(packet->frame_data, buffer + offset, packet->frame_size);
         offset += packet->frame_size;
     }
 
+    // Copying the default footer and increasing the offset
     memcpy(packet->FOOTER, buffer + offset, sizeof(packet->FOOTER));
     offset += sizeof(packet->FOOTER);
 
     if (!__validate_rx_packet__(packet))
     {
+        __LD2420_FN_SET_STATE__(status_ref, LD2420_ERROR_INVALID_HEADER_OR_FOOTER);
+        // Freeing the allocated packet in case if the packet validation failed for
+        // either the header or the footer.
         ld2420_free_command_packet(packet);
         return NULL;
     }
@@ -84,17 +112,20 @@ ld2420_command_packet_t *ld2420_parse_rx_command_packet(unsigned char *buffer, s
 ld2420_command_packet_t *ld2420_create_tx_command_packet(
     ld2420_command_t cmd,
     unsigned char *frame_data,
-    unsigned short frame_size)
+    unsigned short frame_size,
+    ld2420_status_t *status_ref)
 {
-    if (frame_size < 0 || (frame_size > 0 && frame_data == NULL))
+    // Performing basic validation of the input parameters.
+    if ((frame_data == NULL) || (frame_size < 0))
     {
-        // Invalid input: nonzero frame_size but no data
+        __LD2420_FN_SET_STATE__(status_ref, LD2420_ERROR_INVALID_FRAME | LD2420_ERROR_INVALID_FRAME_SIZE);
         return NULL;
     }
 
     ld2420_command_packet_t *packet = (ld2420_command_packet_t *)malloc(sizeof(ld2420_command_packet_t));
     if (packet == NULL)
     {
+        __LD2420_FN_SET_STATE__(status_ref, LD2420_ERROR_MEMORY_ALLOCATION_FAILED);
         return NULL;
     }
 
@@ -110,6 +141,7 @@ ld2420_command_packet_t *ld2420_create_tx_command_packet(
         packet->frame_data = (unsigned char *)malloc(frame_size);
         if (packet->frame_data == NULL)
         {
+            __LD2420_FN_SET_STATE__(status_ref, LD2420_ERROR_MEMORY_ALLOCATION_FAILED);
             free(packet);
             return NULL;
         }
