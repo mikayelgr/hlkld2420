@@ -33,12 +33,13 @@ extern "C"
 #endif
     typedef enum
     {
+        LD2420_OK = 0,
         LD2420_ERROR_INVALID_PACKET,
         LD2420_ERROR_INVALID_BUFFER,
         LD2420_ERROR_INVALID_BUFFER_SIZE,
         LD2420_ERROR_INVALID_FRAME,
         LD2420_ERROR_INVALID_FRAME_SIZE,
-        LD2420_ERROR_MEMORY_ALLOCATION_FAILED,
+        LD2420_ERROR_BUFFER_TOO_SMALL,
         LD2420_ERROR_INVALID_HEADER_OR_FOOTER,
     } ld2420_status_t;
 
@@ -68,9 +69,11 @@ extern "C"
     } ld2420_command_parameter_t;
 
     /**
-     * @brief Structure representing a transmit command packet for the LD2420 module.
+     * @brief Structure representing a command packet for the LD2420 module.
      * @note UPPERCASE field names are used to indicate that these fields are constant,
      *       are instantiated automatically, and should not be modified after initialization.
+     * @note Frame data is passed separately to functions, not stored in this struct.
+     *       This design eliminates dynamic memory allocation for better embedded performance.
      */
     typedef struct
     {
@@ -81,7 +84,8 @@ extern "C"
         unsigned char HEADER[4];
 
         /**
-         * The size of the frame data in bytes.
+         * The size of the frame data in bytes. This includes the command size (2 bytes)
+         * plus any additional frame data.
          */
         unsigned short frame_size;
 
@@ -89,12 +93,6 @@ extern "C"
          * Command identifier (2 bytes).
          */
         unsigned short cmd;
-
-        /**
-         * The frame data payload. The length of this data is variable and its full size
-         * is indicated by the size field.
-         */
-        unsigned char *frame_data;
 
         /**
          * Default packet footer for all command packets. This will always need to be pre-populated
@@ -124,52 +122,56 @@ extern "C"
 
     /**
      * @brief Creates and initializes a transmit command packet for the LD2420 module.
-     * @param cmd The command
+     * @param cmd The command identifier
      * @param frame_data Pointer to the frame data payload (can be NULL if frame_size is 0)
-     * @param frame_size Size of the frame data in bytes
-     * @param status_ref Pointer to a status variable to capture error codes (can be NULL)
-     * @return Pointer to the allocated command packet, or NULL on failure.
+     * @param frame_size Size of the additional frame data in bytes (not including the command itself)
+     * @param out_packet Pointer to caller-provided packet structure to initialize
+     * @return Status code indicating success or error type
      */
-    ld2420_command_packet_t *ld2420_create_tx_command_packet(
+    ld2420_status_t ld2420_create_tx_command_packet(
         const ld2420_command_t cmd,
         const unsigned char *frame_data,
         const unsigned short frame_size,
-        ld2420_status_t *status_ref);
+        ld2420_command_packet_t *out_packet);
 
     /**
      * @brief Serializes a command packet into a byte buffer suitable for transmission.
-     * @param packet Pointer to the command packet to serialize.
-     * @param out_size Pointer to a size_t variable to capture the size of the output
-     *                 buffer (can be NULL if size is not needed).
-     * @param status_ref Pointer to a status variable to capture error codes (can be NULL)
-     * @return Pointer to the allocated byte buffer containing the serialized packet,
-     *         or NULL on failure.
+     * @param packet Pointer to the command packet to serialize
+     * @param frame_data Pointer to the frame data payload (can be NULL if no additional frame data)
+     * @param frame_data_size Size of the additional frame data in bytes (not including the command)
+     * @param out_buffer Pointer to caller-provided buffer to store serialized packet
+     * @param buffer_capacity Size of the output buffer in bytes
+     * @param out_size Pointer to size_t variable to capture actual bytes written (cannot be NULL)
+     * @return Status code indicating success or error type
      */
-    unsigned char *ld2420_serialize_command_packet(
+    ld2420_status_t ld2420_serialize_command_packet(
         const ld2420_command_packet_t *packet,
-        size_t *out_size,
-        ld2420_status_t *status_ref);
+        const unsigned char *frame_data,
+        const unsigned short frame_data_size,
+        unsigned char *out_buffer,
+        const size_t buffer_capacity,
+        size_t *out_size);
 
     /**
-     * @brief Given a buffer, parses the RX packet sent from the LD2420 module and parses it
-     *        as an rx command packet.
+     * @brief Parses a received buffer into an RX command packet from the LD2420 module.
      * @param buffer Pointer to the buffer containing the received data
-     * @param buffer_size Size of the buffer in bytes
-     * @param status_ref Pointer to a status variable to capture error codes (can be NULL)
-     * @return Pointer to the allocated command packet, or NULL on failure.
+     * @param buffer_size Size of the input buffer in bytes
+     * @param out_packet Pointer to caller-provided packet structure to populate
+     * @param out_frame_data Pointer to caller-provided buffer for frame data (can be NULL if no frame data expected)
+     * @param frame_data_capacity Size of the frame data buffer in bytes
+     * @param out_frame_data_size Pointer to size_t to capture actual frame data bytes read (cannot be NULL)
+     * @return Status code indicating success or error type
      * @note RX packets will always contain 2 additional bytes as response padding after the
      *       echo of the command.
      */
-    ld2420_command_packet_t *ld2420_parse_rx_command_packet(
+    ld2420_status_t ld2420_parse_rx_command_packet(
         const unsigned char *buffer,
         const size_t buffer_size,
-        ld2420_status_t *status_ref);
+        ld2420_command_packet_t *out_packet,
+        unsigned char *out_frame_data,
+        const size_t frame_data_capacity,
+        size_t *out_frame_data_size);
 
-    /**
-     * @brief Frees the memory allocated for a command packet.
-     * @param packet Pointer to the command packet to free.
-     */
-    void ld2420_free_command_packet(ld2420_command_packet_t *packet);
 #ifdef __cplusplus
 }
 #endif
