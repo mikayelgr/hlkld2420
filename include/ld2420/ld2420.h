@@ -24,7 +24,7 @@
  * The end bytes for sending a command packet to the LD2420 module. This is documented
  * in the official protocol for HLK-LD2420 at https://hlktech.net/index.php?id=1291.
  */
-static const unsigned char LD2420_END_COMMAND_PACKET[4] = {04, 03, 02, 01};
+#define LD2420_END_COMMAND_PACKET ((const unsigned char[4]){0x04, 0x03, 0x02, 0x01})
 
 #ifdef __cplusplus
 extern "C"
