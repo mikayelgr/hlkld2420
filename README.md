@@ -101,7 +101,7 @@ To ensure efficient memory usage, the library exposes a few useful constants whi
 
 - `LD2420_MIN_RX_PACKET_SIZE` - core constant
 
-The minimum size for a packet received (RX) from the sensor is **14 bytes**. This minimum size occurs for simple acknowledgment packets, such as "Response successful", which contain no parameter data. Based on the "Receive Command Component" structure defined in the protocol[cite: 6], the packet is composed of the following:
+The minimum size for a packet received (RX) from the sensor is **14 bytes**. This minimum size occurs for simple acknowledgment packets, such as "Response successful", which contain no parameter data. Based on the "Receive Command Component" structure defined in the protocol, the packet is composed of the following:
 
 - **Packet Header**: 4 bytes
 - **Data Length**: 2 bytes
