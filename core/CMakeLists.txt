@@ -3,7 +3,7 @@ add_library(ld2420_core ld2420.c)
 
 # Add this instead:
 target_include_directories(ld2420_core PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
     $<INSTALL_INTERFACE:include>
 )
 
