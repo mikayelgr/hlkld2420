@@ -14,7 +14,7 @@ if(COMPILER_SUPPORTS_MLITTLE_ENDIAN)
 else()
     # If the compiler doesn't support the flag, we can't guarantee byte order.
     # Most modern architectures (x86, x64, ARM default) are little-endian anyway.
-    message(FATAL_ERROR
+    message(WARNING
         "Compiler does not support -mlittle-endian flag. This library assumes the target\n"
         "architecture is little-endian. If you are targeting a big-endian system, this\n"
         "library will NOT work correctly. Please report this at:\n"
