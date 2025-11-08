@@ -3,5 +3,11 @@
   "C_Cpp.default.includePath": [
     "${env:PICO_SDK_PATH}/**",
     "${workspaceFolder}/**"
-  ]
+  ],
+  "cmake.configureOnOpen": true,
+  "cmake.buildBeforeRun": true,
+  "cmake.debugConfig": {
+    "MIMode": "lldb",
+    "stopAtEntry": false
+  }
 }
