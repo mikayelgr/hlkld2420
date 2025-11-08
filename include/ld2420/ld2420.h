@@ -19,7 +19,7 @@
  * The header bytes for sending a command packet to the LD2420 module. This is documented
  * in the official protocol for HLK-LD2420 at https://hlktech.net/index.php?id=1291.
  */
-static const unsigned char LD2420_BEG_COMMAND_PACKET[4] = {0xFD, 0xFC, 0xFB, 0xFA};
+#define LD2420_BEG_COMMAND_PACKET ((const unsigned char[4]){0xFD, 0xFC, 0xFB, 0xFA})
 
 /**
  * The end bytes for sending a command packet to the LD2420 module. This is documented

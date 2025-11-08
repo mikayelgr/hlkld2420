@@ -5,8 +5,6 @@
 
 #include "ld2420/ld2420.h"
 
-
-
 /**
  * @brief Initializes the HEADER and FOOTER fields of the given packet with
  *        the default values. The function assumes that the packet is never NULL.
@@ -17,20 +15,6 @@ static void __initialize_packet_header_and_footer__(ld2420_command_packet_t *pac
 {
     memcpy(packet->HEADER, LD2420_BEG_COMMAND_PACKET, sizeof(packet->HEADER));
     memcpy(packet->FOOTER, LD2420_END_COMMAND_PACKET, sizeof(packet->FOOTER));
-}
-
-/**
- * @brief Sets the status code if the status pointer is not NULL.
- *
- * @param status_ref Pointer to status variable (can be NULL)
- * @param status The status code to set
- */
-static void __set_status__(ld2420_status_t *status_ref, ld2420_status_t status)
-{
-    if (status_ref != NULL)
-    {
-        *status_ref = status;
-    }
 }
 
 /**
@@ -195,4 +179,3 @@ ld2420_status_t ld2420_serialize_command_packet(
     *out_size = packet_size;
     return LD2420_OK;
 }
-
