@@ -71,10 +71,7 @@
   "buildPresets": [
     {
       "name": "base-build",
-      "cleanFirst": false,
-      "verbose": false,
-      "hidden": true,
-      "jobs": 0
+      "hidden": true
     },
     {
       "name": "native-debug",
