@@ -48,7 +48,7 @@ extern "C"
     {
         LD2420_CMD_OPEN_CONFIG_MODE = (unsigned short)0xFF,
         LD2420_CMD_CLOSE_CONFIG_MODE = (unsigned short)0xFE,
-        LD2420_CMD_READ_VERSION = (unsigned short)0x00,
+        LD2420_CMD_READ_VERSION_NUMBER = (unsigned short)0x00,
         LD2420_CMD_REBOOT = (unsigned short)0x68,
         LD2420_CMD_READ_CONFIG = (unsigned short)0x08,
         LD2420_CMD_SET_CONFIG = (unsigned short)0x07,

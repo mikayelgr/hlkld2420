@@ -13,6 +13,9 @@ void tearDown(void)
 
 void test_example(void)
 {
+    unsigned char frame_data[] = {};
+    ld2420_command_packet_t *packet = ld2420_create_tx_command_packet(
+        LD2420_CMD_READ_VERSION_NUMBER, frame_data, sizeof(frame_data), NULL);
     // Example test case
     TEST_ASSERT_EQUAL(1, 1);
 }
