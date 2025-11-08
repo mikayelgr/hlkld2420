@@ -1,12 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-
 project(hlkld2420 C CXX ASM)
-
-add_library(ld2420_iface INTERFACE)
-target_include_directories(ld2420_iface INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include> # Used when the library is installed
-)
 
 install(
     DIRECTORY include/

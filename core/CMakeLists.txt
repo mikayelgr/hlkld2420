@@ -1,6 +1,11 @@
 # Check if the target already exists before adding it
 add_library(ld2420_core ld2420.c)
-target_link_libraries(ld2420_core PUBLIC ld2420_iface)
+
+# Add this instead:
+target_include_directories(ld2420_core PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
 
 include(CheckCCompilerFlag)
 
