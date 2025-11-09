@@ -47,11 +47,12 @@ target_link_libraries(basic_example PRIVATE
     ld2420_core
     ld2420_pico
     pico_stdlib
+    pico_multicore
 )
 
-# Enable USB output, disable UART output
+# Enable USB and UART I/O
 pico_enable_stdio_usb(basic_example 1)
-pico_enable_stdio_uart(basic_example 0)
+pico_enable_stdio_uart(basic_example 1)
 
 # Create map/bin/hex/uf2 files
 pico_add_extra_outputs(basic_example)
