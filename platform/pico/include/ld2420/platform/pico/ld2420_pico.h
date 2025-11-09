@@ -32,6 +32,22 @@ extern "C"
      * @return Status of the initialization as an ld2420_status_t value.
      */
     ld2420_status_t ld2420_pico_init(ld2420_pico_t *config, unsigned char rx_pin, unsigned char tx_pin, uart_inst_t *uart_instance);
+
+    /**
+     * @brief Sends data to the LD2420 module via UART.
+     * @param config Pointer to the ld2420_pico_t structure.
+     * @param data Pointer to the data buffer to send.
+     * @param length Length of the data buffer.
+     * @return Status of the send operation as an ld2420_status_t value.
+     */
+    ld2420_status_t ld2420_pico_send(ld2420_pico_t *config, const unsigned char *data, const uint8_t length);
+
+    /**
+     * @brief Deinitializes the LD2420 configuration for Raspberry Pi Pico platform.
+     * @param config Pointer to the ld2420_pico_t structure to deinitialize.
+     * @return Status of the deinitialization as an ld2420_status_t value.
+     */
+    ld2420_status_t ld2420_pico_deinit(ld2420_pico_t *config);
 #ifdef __cplusplus
 }
 #endif

@@ -22,18 +22,12 @@ pico_sdk_init()
 
 include(FetchContent)
 
-# Use local repo during development, remote for distribution
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../.git")
-    set(HLKLD2420_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../..")
-    message(STATUS "Using local hlkld2420 repository")
-else()
-    set(HLKLD2420_SOURCE "https://github.com/mikayelgr/hlkld2420.git")
-    message(STATUS "Using remote hlkld2420 repository")
-endif()
+# Use local hlkld2420 repository as is
+set(HLKLD2420_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+message(STATUS "Using local hlkld2420 repository")
 
 FetchContent_Declare(hlkld2420
-    GIT_REPOSITORY "${HLKLD2420_SOURCE}"
-    GIT_TAG main
+    SOURCE_DIR "${HLKLD2420_SOURCE}"
 )
 FetchContent_MakeAvailable(hlkld2420)
 

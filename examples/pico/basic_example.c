@@ -2,94 +2,71 @@
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
 #include "hardware/gpio.h"
-#include "pico/multicore.h"
+#include "ld2420/platform/pico/ld2420_pico.h"
 
 // UART0 default pins
 #define UART_ID uart0
 #define BAUD_RATE 115200
-#define UART_TX_PIN 0
-#define UART_RX_PIN 1
+#define UART_TX_PIN 12
+#define UART_RX_PIN 13
 
-void core1_launch_entry()
-{
-    gpio_init(PICO_DEFAULT_LED_PIN);
-    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-    for (;;)
-    {
-        gpio_put(PICO_DEFAULT_LED_PIN, 1);
-        sleep_ms(200);
+// Command to open configuration mode
+static uint8_t CMD_OPEN_CONFIG_MODE[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01};
+#define CMD_OPEN_CONFIG_MODE_LEN 14
 
-        gpio_put(PICO_DEFAULT_LED_PIN, 0);
-        sleep_ms(200);
-    }
-}
+// Command to close configuration mode
+static uint8_t CMD_CLOSE_CONFIG_MODE[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xFE, 0x00, 0x04, 0x03, 0x02, 0x01};
+#define CMD_CLOSE_CONFIG_MODE_LEN 12
+
+// Command to read version
+static uint8_t CMD_READ_VERSION[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0x00, 0x00, 0x04, 0x03, 0x02, 0x01};
+#define CMD_READ_VERSION_LEN 12
 
 int main()
 {
     stdio_init_all();
 
-    // Wait until USB is connected to run the program
+    // Wait until tty is connected for serial monitoring and run the program
     while (!stdio_usb_connected())
     {
-        sleep_ms(100);
+        tight_loop_contents();
     }
 
-    printf("\n=== UART0 Test Program ===\n");
+    ld2420_pico_t ld2420_config;
+    gpio_init(PICO_DEFAULT_LED_PIN);
+    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    gpio_put(PICO_DEFAULT_LED_PIN, 1); // Turn on LED to indicate start
 
-    // Initialize UART0 with proper baud rate
-    uart_init(UART_ID, BAUD_RATE);
-
-    // Set the TX and RX pins for UART0
-    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
-    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
-
-    // Set UART flow control (CTS/RTS) - disabled
-    uart_set_hw_flow(UART_ID, false, false);
-
-    // Set data format: 8 data bits, 1 stop bit, no parity
-    uart_set_format(UART_ID, 8, 1, UART_PARITY_NONE);
-
-    // Turn on FIFO's
-    uart_set_fifo_enabled(UART_ID, true);
-
-    printf("UART0 initialized: %d baud, TX=GP%d, RX=GP%d\n", BAUD_RATE, UART_TX_PIN, UART_RX_PIN);
-
-    // Start LED blinking on core 1
-    multicore_launch_core1(core1_launch_entry);
-
-    // Main loop - continuously check for incoming data
-    printf("Waiting for UART data...\n");
-
-    while (true)
+    if (ld2420_pico_init(&ld2420_config, UART_RX_PIN, UART_TX_PIN, UART_ID) == LD2420_OK)
     {
-        const uint8_t test_msg[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01};
-        uart_write_blocking(UART_ID, test_msg, sizeof(test_msg));
-        printf("Sent %d bytes: ", sizeof(test_msg));
-        for (int i = 0; i < sizeof(test_msg); i++)
-        {
-            printf("0x%02X ", test_msg[i]);
-        }
-        printf("\n");
-
-        // Wait a bit and collect any response
-        sleep_ms(100);
-
-        // Check if data is available and read it byte by byte
-        if (uart_is_readable(UART_ID))
-        {
-            printf("Received: ");
-            while (uart_is_readable(UART_ID))
-            {
-                uint8_t byte = uart_getc(UART_ID);
-                printf("0x%02X ", byte);
-            }
-            printf("\n");
-        }
-        else
-        {
-            printf("No data received\n");
-        }
+        printf("LD2420 initialized successfully.\n");
+    }
+    else
+    {
+        printf("Failed to initialize LD2420.\n");
+        return -1;
     }
 
+    if (ld2420_pico_send(&ld2420_config, CMD_CLOSE_CONFIG_MODE, sizeof(CMD_CLOSE_CONFIG_MODE)) == LD2420_OK)
+    {
+        printf("Sent CLOSE CONFIG MODE command.\n");
+    }
+    else
+    {
+        printf("Failed to send CLOSE CONFIG MODE command.\n");
+        return -1;
+    }
+
+    while (!uart_is_readable(ld2420_config.uart_instance))
+    {
+        tight_loop_contents();
+    }
+    while (uart_is_readable(ld2420_config.uart_instance))
+    {
+        uint8_t ch = uart_getc(ld2420_config.uart_instance);
+        printf("Received: 0x%02X\n", ch);
+    }
+
+    printf("\n");
     return 0;
 }
