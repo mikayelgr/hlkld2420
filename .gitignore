@@ -198,3 +198,4 @@ $RECYCLE.BIN/
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode
+_codeql_detected_source_root
