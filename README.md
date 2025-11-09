@@ -95,7 +95,7 @@ The API is fully documented in the source code headers:
 
 ### Constraints
 
-To ensure efficient memory usage, the library exposes a few useful constants which are computed from the official protocol documentation. They are documented below.
+To ensure efficient memory usage, the library exposes a few useful constants which are computed from the official protocol documentation. Both, upper and lower bounds are documented below for TX and RX packets, to and from the sensor.
 
 #### Minimum Receive (RX) Packet Size
 
@@ -115,6 +115,75 @@ $$
 \underbrace{2 \text{ bytes}}_{\text{Length}} +
 \underbrace{4 \text{ bytes}}_{\text{Min. RX Data}} +
 \underbrace{4 \text{ bytes}}_{\text{Footer}} = 14 \text{ bytes}
+$$
+
+___
+
+#### Maximum Receive (RX) Packet Size
+
+- `LD2420_MAX_RX_PACKET_SIZE` - core constant
+
+The maximum size for a packet received (RX) from the sensor is **154 bytes**. This occurs when receiving a response from the **"Read module configuration" (0x08)** command that queries all 35 available parameters.
+
+Based on the "Receive Command Component" structure, the packet is composed of:
+
+- **Packet Header**: 4 bytes
+- **Data Length**: 2 bytes
+- **Return Value (Status)**: 2 bytes
+- **Return Command Value**: 2 bytes
+- **Return Data**: $N \times (4 \text{ value})$ bytes
+- **End of Packet**: 4 bytes
+
+The command data payload is $35 \times 4 = 140$ bytes.
+
+The total size is calculated as:
+$$
+\underbrace{4 \text{ bytes}}_{\text{Header}} + \underbrace{2 \text{ bytes}}_{\text{Length}} + \underbrace{2 \text{ bytes}}_{\text{Status}} + \underbrace{2 \text{ bytes}}_{\text{Command}} + \underbrace{140 \text{ bytes}}_{\text{Max Data}} + \underbrace{4 \text{ bytes}}_{\text{End}} = 154 \text{ bytes}
+$$
+
+___
+
+#### Minimum Transmit (TX) Packet Size
+
+- `LD2420_MIN_TX_PACKET_SIZE` - core constant
+
+The minimum size for a packet transmitted (TX) to the sensor is **12 bytes**. This occurs when sending a simple command that does not require any parameters ($N=0$), such as "Reboot module", "Read version number", or "Module close command mode".
+
+Based on the "Send Command Components" structure, the packet is composed of:
+
+- **Packet Header**: 4 bytes
+- **Data Length**: 2 bytes (This field will contain the value $0x0002$ to indicate the 2-byte payload)
+- **Intra-frame Data**: 2 bytes (This is the minimal 2-byte command value, e.g., `0x68 0x00`)
+- **End of Packet**: 4 bytes
+
+The total size is calculated as:
+$$
+\underbrace{4 \text{ bytes}}_{\text{Header}} + \underbrace{2 \text{ bytes}}_{\text{Length}} + \underbrace{2 \text{ bytes}}_{\text{Min. Data}} + \underbrace{4 \text{ bytes}}_{\text{End}} = 12 \text{ bytes}
+$$
+
+___
+
+#### Maximum Transmit (TX) Packet Size
+
+- `LD2420_MAX_TX_PACKET_SIZE` - core constant
+
+The maximum size for a packet transmitted (TX) to the sensor is **222 bytes**.
+
+This occurs when using the **"Set-up module configuration parameters" (0x07)** command to set all possible parameters at once.
+
+Based on the "Send Command Components" structure, the packet is composed of:
+
+- **Packet Header**: 4 bytes
+- **Data Length**: 2 bytes
+- **Command Value**: 2 bytes
+- **Command Data**: $N \times (2 \text{ name} + 4 \text{ value})$ bytes
+- **End of Packet**: 4 bytes
+
+The total number of parameters ($N$) from Table 2 is **35** [$1+1+1+16+16$]. The command data payload is $35 \times 6 = 210$ bytes.
+
+The total size is calculated as:
+$$
+\underbrace{4 \text{ bytes}}_{\text{Header}} + \underbrace{2 \text{ bytes}}_{\text{Length}} + \underbrace{2 \text{ bytes}}_{\text{Command}} + \underbrace{210 \text{ bytes}}_{\text{Max Data}} + \underbrace{4 \text{ bytes}}_{\text{End}} = 222 \text{ bytes}
 $$
 
 ## Adding the Library to Another Project

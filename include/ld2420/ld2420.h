@@ -15,6 +15,24 @@
 #define LD2420_MIN_RX_PACKET_SIZE (unsigned char)14
 
 /**
+ * Maximum size of a valid RX command packet. Refer to the "Maximum Receive (RX) Packet Size"
+ * section in the README for details on how to compute this value.
+ */
+#define LD2420_MAX_RX_PACKET_SIZE (unsigned char)154
+
+/**
+ * Minimum size of a valid TX command packet. Refer to the "Maximum Transmit (TX) Packet Size"
+ * section in the README for details on how to compute this value.
+ */
+#define LD2420_MIN_TX_PACKET_SIZE (unsigned char)12
+
+/**
+ * Maximum size of a valid TX command packet. Refer to the "Maximum Transmit (TX) Packet Size"
+ * section in the README for details on how to compute this value.
+ */
+#define LD2420_MAX_TX_PACKET_SIZE (unsigned char)222
+
+/**
  * The header bytes for sending a command packet to the LD2420 module. This is documented
  * in the official protocol for HLK-LD2420 at https://hlktech.net/index.php?id=1291.
  */
