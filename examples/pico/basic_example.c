@@ -32,6 +32,8 @@ int main()
         tight_loop_contents();
     }
 
+    printf("Starting LD2420 interrupt-driven example...\n");
+
     ld2420_pico_t ld2420_config;
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
@@ -47,6 +49,17 @@ int main()
         return -1;
     }
 
+    // Enable interrupt-driven UART reception
+    if (ld2420_pico_enable_interrupts(&ld2420_config) == LD2420_OK)
+    {
+        printf("UART interrupts enabled.\n");
+    }
+    else
+    {
+        printf("Failed to enable UART interrupts.\n");
+        return -1;
+    }
+
     if (ld2420_pico_send(&ld2420_config, CMD_CLOSE_CONFIG_MODE, sizeof(CMD_CLOSE_CONFIG_MODE)) == LD2420_OK)
     {
         printf("Sent CLOSE CONFIG MODE command.\n");
@@ -57,16 +70,44 @@ int main()
         return -1;
     }
 
-    while (!uart_is_readable(ld2420_config.uart_instance))
+    // Wait for response with timeout (non-blocking)
+    absolute_time_t timeout = make_timeout_time_ms(2000); // 2 second timeout
+    
+    printf("Waiting for response...\n");
+    
+    while (absolute_time_diff_us(get_absolute_time(), timeout) > 0)
     {
+        // Check if we have received data
+        if (ld2420_pico_bytes_available(&ld2420_config) >= sizeof(CMD_CLOSE_CONFIG_MODE))
+        {
+            break;
+        }
+        
+        // Could do other work here while waiting...
         tight_loop_contents();
     }
-    while (uart_is_readable(ld2420_config.uart_instance))
+
+    // Read and display received data
+    uint16_t bytes_available = ld2420_pico_bytes_available(&ld2420_config);
+    if (bytes_available > 0)
     {
-        uint8_t ch = uart_getc(ld2420_config.uart_instance);
-        printf("Received: 0x%02X\n", ch);
+        printf("Received %d bytes:\n", bytes_available);
+        
+        uint8_t byte;
+        while (ld2420_pico_read_byte(&ld2420_config, &byte))
+        {
+            printf("0x%02X ", byte);
+        }
+        printf("\n");
+    }
+    else
+    {
+        printf("No response received (timeout).\n");
     }
 
-    printf("\n");
+    // Clean up
+    ld2420_pico_deinit(&ld2420_config);
+    printf("\nExample complete.\n");
+    
     return 0;
 }
