@@ -52,7 +52,7 @@ extern "C"
         // Initialize ring buffer indices
         config->rx_ring_buffer.write_idx = 0;
         config->rx_ring_buffer.read_idx = 0;
-        memset((void *)config->rx_ring_buffer.buffer, 0, LD2420_PICO_RX_BUFFER_SIZE);
+        memset(config->rx_ring_buffer.buffer, 0, LD2420_PICO_RX_BUFFER_SIZE);
 
         // Store config pointer for interrupt handler access
         int uart_index = (uart_instance == uart0) ? 0 : 1;
