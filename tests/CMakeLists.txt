@@ -8,4 +8,12 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(Unity)
-add_subdirectory(core)
+
+if(NOT DEFINED PICO_SDK_PATH)
+    add_subdirectory(core)
+endif()
+
+# Only add pico tests if building for Pico platform
+if(PICO_SDK_PATH)
+    # add_subdirectory(pico)
+endif()

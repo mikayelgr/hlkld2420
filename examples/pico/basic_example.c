@@ -6,108 +6,126 @@
 
 // UART0 default pins
 #define UART_ID uart0
-#define BAUD_RATE 115200
 #define UART_TX_PIN 12
 #define UART_RX_PIN 13
 
-// Command to open configuration mode
-static uint8_t CMD_OPEN_CONFIG_MODE[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x04, 0x00, 0xFF, 0x00, 0x01, 0x00, 0x04, 0x03, 0x02, 0x01};
-#define CMD_OPEN_CONFIG_MODE_LEN 14
+// Command to read version number
+static const uint8_t CMD_READ_VERSION[] = {
+    0xFD, 0xFC, 0xFB, 0xFA, // Header
+    0x02, 0x00,             // Frame size (2 bytes)
+    0x00, 0x00,             // Command: Read version
+    0x04, 0x03, 0x02, 0x01  // Footer
+};
 
-// Command to close configuration mode
-static uint8_t CMD_CLOSE_CONFIG_MODE[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0xFE, 0x00, 0x04, 0x03, 0x02, 0x01};
-#define CMD_CLOSE_CONFIG_MODE_LEN 12
-
-// Command to read version
-static uint8_t CMD_READ_VERSION[] = {0xFD, 0xFC, 0xFB, 0xFA, 0x02, 0x00, 0x00, 0x00, 0x04, 0x03, 0x02, 0x01};
-#define CMD_READ_VERSION_LEN 12
+// Expected minimum response size for LD2420 packets
+#define MIN_RESPONSE_SIZE 12
 
 int main()
 {
     stdio_init_all();
 
-    // Wait until tty is connected for serial monitoring and run the program
+    // Wait until USB is connected for serial monitoring
     while (!stdio_usb_connected())
     {
         tight_loop_contents();
     }
 
-    printf("Starting LD2420 interrupt-driven example...\n");
+    printf("\n=== LD2420 Basic Example ===\n");
+    printf("Demonstrates interrupt-driven UART communication\n\n");
 
-    ld2420_pico_t ld2420_config;
+    // Initialize LED for status indication
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-    gpio_put(PICO_DEFAULT_LED_PIN, 1); // Turn on LED to indicate start
+    gpio_put(PICO_DEFAULT_LED_PIN, 1);
 
-    if (ld2420_pico_init(&ld2420_config, UART_RX_PIN, UART_TX_PIN, UART_ID) == LD2420_OK)
+    // Initialize LD2420 configuration
+    ld2420_pico_t ld2420_config;
+    if (ld2420_pico_init(&ld2420_config, UART_RX_PIN, UART_TX_PIN, UART_ID) != LD2420_OK)
     {
-        printf("LD2420 initialized successfully.\n");
+        printf("ERROR: Failed to initialize LD2420\n");
+        return -1;
     }
-    else
+    printf("LD2420 initialized (UART%d, RX=%d, TX=%d)\n",
+           uart_get_index(UART_ID), UART_RX_PIN, UART_TX_PIN);
+
+    // Enable interrupt-driven reception
+    if (ld2420_pico_enable_interrupts(&ld2420_config) != LD2420_OK)
     {
-        printf("Failed to initialize LD2420.\n");
+        printf("ERROR: Failed to enable UART interrupts\n");
+        ld2420_pico_deinit(&ld2420_config);
+        return -1;
+    }
+    printf("Interrupt-driven RX enabled\n\n");
+
+    // Send read version command
+    printf("Sending READ VERSION command...\n");
+    if (ld2420_pico_send(&ld2420_config, CMD_READ_VERSION, sizeof(CMD_READ_VERSION)) != LD2420_OK)
+    {
+        printf("ERROR: Failed to send command\n");
+        ld2420_pico_deinit(&ld2420_config);
         return -1;
     }
 
-    // Enable interrupt-driven UART reception
-    if (ld2420_pico_enable_interrupts(&ld2420_config) == LD2420_OK)
-    {
-        printf("UART interrupts enabled.\n");
-    }
-    else
-    {
-        printf("Failed to enable UART interrupts.\n");
-        return -1;
-    }
+    // Wait for response with timeout
+    absolute_time_t timeout = make_timeout_time_ms(1000);
+    bool response_received = false;
 
-    if (ld2420_pico_send(&ld2420_config, CMD_CLOSE_CONFIG_MODE, sizeof(CMD_CLOSE_CONFIG_MODE)) == LD2420_OK)
-    {
-        printf("Sent CLOSE CONFIG MODE command.\n");
-    }
-    else
-    {
-        printf("Failed to send CLOSE CONFIG MODE command.\n");
-        return -1;
-    }
+    printf("Waiting for response (timeout: 1000ms)...\n");
 
-    // Wait for response with timeout (non-blocking)
-    absolute_time_t timeout = make_timeout_time_ms(2000); // 2 second timeout
-    
-    printf("Waiting for response...\n");
-    
     while (absolute_time_diff_us(get_absolute_time(), timeout) > 0)
     {
-        // Check if we have received data
-        if (ld2420_pico_bytes_available(&ld2420_config) >= sizeof(CMD_CLOSE_CONFIG_MODE))
+        // Check if we have at least a minimum valid packet
+        if (ld2420_pico_bytes_available(&ld2420_config) >= MIN_RESPONSE_SIZE)
         {
+            response_received = true;
             break;
         }
-        
-        // Could do other work here while waiting...
-        tight_loop_contents();
+
+        // Blink LED while waiting
+        static absolute_time_t last_blink = 0;
+        if (absolute_time_diff_us(last_blink, get_absolute_time()) > 100000) // 100ms
+        {
+            gpio_put(PICO_DEFAULT_LED_PIN, !gpio_get(PICO_DEFAULT_LED_PIN));
+            last_blink = get_absolute_time();
+        }
     }
 
-    // Read and display received data
-    uint16_t bytes_available = ld2420_pico_bytes_available(&ld2420_config);
-    if (bytes_available > 0)
+    // Process response
+    if (response_received)
     {
-        printf("Received %d bytes:\n", bytes_available);
-        
-        uint8_t byte;
-        while (ld2420_pico_read_byte(&ld2420_config, &byte))
+        uint16_t bytes_available = ld2420_pico_bytes_available(&ld2420_config);
+        printf("\nResponse received (%d bytes)\n", bytes_available);
+        printf("Raw data: ");
+
+        uint8_t buffer[128];
+        uint16_t bytes_read = ld2420_pico_read_bytes(&ld2420_config, buffer, sizeof(buffer));
+
+        for (uint16_t i = 0; i < bytes_read; i++)
         {
-            printf("0x%02X ", byte);
+            printf("%02X ", buffer[i]);
+            if ((i + 1) % 16 == 0)
+                printf("\n          ");
         }
         printf("\n");
+
+        gpio_put(PICO_DEFAULT_LED_PIN, 1); // LED on = success
     }
     else
     {
-        printf("No response received (timeout).\n");
+        printf("\nNo response received (timeout)\n");
+        gpio_put(PICO_DEFAULT_LED_PIN, 0); // LED off = failure
+    }
+
+    // Check for buffer overflows
+    uint32_t overflow_count = ld2420_pico_get_overflow_count(&ld2420_config);
+    if (overflow_count > 0)
+    {
+        printf("Warning: %lu bytes were dropped due to buffer overflow\n", overflow_count);
     }
 
     // Clean up
     ld2420_pico_deinit(&ld2420_config);
-    printf("\nExample complete.\n");
-    
+    printf("\n=== Example complete ===\n");
+
     return 0;
 }

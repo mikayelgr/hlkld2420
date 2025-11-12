@@ -34,7 +34,6 @@
       },
       "hidden": true
     },
-
     {
       "name": "native-debug",
       "displayName": "Native Debug",

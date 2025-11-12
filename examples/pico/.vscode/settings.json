@@ -1,0 +1,6 @@
+{
+    "makefile.compileCommandsPath": "${workspaceFolder}/build/compile_commands.json",
+    "files.associations": {
+        "ld2420_pico.h": "c"
+    }
+}

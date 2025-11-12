@@ -139,3 +139,40 @@ int main() {
 See the `examples/pico/` directory for complete examples:
 - `basic_example.c` - Demonstrates interrupt-driven communication
 - `interrupt_example.c` - Advanced interrupt handling with timeouts
+
+## Thread Safety and Multi-Core Considerations
+
+### Interrupt Safety
+
+The ring buffer implementation is designed to be interrupt-safe for the single-producer (ISR), single-consumer (main loop) pattern:
+
+- **Write operations** (in ISR): Update `write_idx` and `overflow_count`
+- **Read operations** (in main loop): Update `read_idx`
+- **Shared state**: The `volatile` keyword ensures variables are not cached inappropriately
+
+### Memory Ordering
+
+The implementation relies on the ARM Cortex-M0+ memory model guarantees:
+
+- **Sequential consistency**: Memory operations appear in program order
+- **Atomic reads/writes**: 16-bit and 32-bit aligned operations are atomic
+- **No reordering**: The processor does not reorder memory operations across `volatile` accesses
+
+For other architectures or more complex scenarios, consider using memory barriers.
+
+### Multi-Core Usage
+
+If using both cores on the RP2040:
+
+1. **Same UART on both cores**: Not supported - only one core should access each UART instance
+2. **Different UARTs**: Each core can safely use a different UART (uart0 on core 0, uart1 on core 1)
+3. **Shared access**: Requires additional synchronization (mutexes, critical sections)
+
+### Best Practices
+
+- ✅ **DO**: Call read functions (`ld2420_pico_read_byte`, `ld2420_pico_read_bytes`) from main loop
+- ✅ **DO**: Use `ld2420_pico_clear_buffer()` which includes interrupt disabling
+- ✅ **DO**: Check `ld2420_pico_get_overflow_count()` periodically to detect data loss
+- ❌ **DON'T**: Call read functions from multiple threads without synchronization
+- ❌ **DON'T**: Manually modify ring buffer fields - use provided functions
+- ❌ **DON'T**: Share a single LD2420 instance across cores without proper locking

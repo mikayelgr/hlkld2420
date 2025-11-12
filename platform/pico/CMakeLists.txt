@@ -12,4 +12,5 @@ target_link_libraries(ld2420_pico PUBLIC
     pico_stdlib
     hardware_uart
     hardware_gpio
+    hardware_irq
 )

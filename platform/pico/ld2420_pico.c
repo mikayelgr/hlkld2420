@@ -1,9 +1,10 @@
 #include "ld2420/platform/pico/ld2420_pico.h"
 #include <hardware/uart.h>
 #include <hardware/gpio.h>
+#include <hardware/irq.h>
+#include <hardware/sync.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <hardware/irq.h>
 #include <string.h>
 
 // Global pointer to track the config for interrupt handling
@@ -21,7 +22,7 @@ extern "C"
     ld2420_status_t ld2420_pico_send(
         ld2420_pico_t *config,
         const uint8_t *buffer,
-        const uint8_t buffer_size)
+        const uint16_t buffer_size)
     {
         if (config == NULL || buffer == NULL || buffer_size == 0)
         {
@@ -49,7 +50,7 @@ extern "C"
         config->tx_pin = tx_pin;
         config->uart_instance = uart_instance;
 
-        // Initialize ring buffer indices
+        // Initialize ring buffer indices and overflow counter
         config->rx_ring_buffer.write_idx = 0;
         config->rx_ring_buffer.read_idx = 0;
         memset(config->rx_ring_buffer.buffer, 0, LD2420_PICO_RX_BUFFER_SIZE);
@@ -107,30 +108,39 @@ extern "C"
     // UART interrupt handler
     static void ld2420_pico_uart_irq_handler(void)
     {
-        // Determine which UART triggered the interrupt
+        // Determine which UART triggered the interrupt by checking both instances
         for (int i = 0; i < 2; i++)
         {
             if (g_uart_configs[i] == NULL)
                 continue;
 
             uart_inst_t *uart = g_uart_configs[i]->uart_instance;
-            
+
+            // Only process this UART if it actually has data available
+            // This prevents reading from the wrong UART when only one triggers
+            if (!uart_is_readable(uart))
+                continue;
+
             // Read all available bytes from UART FIFO into ring buffer
             while (uart_is_readable(uart))
             {
                 uint8_t ch = uart_getc(uart);
                 ld2420_ring_buffer_t *rb = &g_uart_configs[i]->rx_ring_buffer;
-                
+
                 // Calculate next write position
                 uint16_t next_write_idx = (rb->write_idx + 1) % LD2420_PICO_RX_BUFFER_SIZE;
-                
+
                 // Check for buffer overflow
                 if (next_write_idx != rb->read_idx)
                 {
                     rb->buffer[rb->write_idx] = ch;
                     rb->write_idx = next_write_idx;
                 }
-                // If buffer is full, byte is dropped (overflow condition)
+                else
+                {
+                    // Buffer is full, increment overflow counter
+                    rb->overflow_count++;
+                }
             }
         }
     }
@@ -142,15 +152,7 @@ extern "C"
             return LD2420_ERROR_INVALID_ARGUMENTS;
         }
 
-        // Get the IRQ number for the UART instance
-        int uart_irq = (config->uart_instance == uart0) ? UART0_IRQ : UART1_IRQ;
-        
-        // Set up the interrupt handler
-        irq_set_exclusive_handler(uart_irq, ld2420_pico_uart_irq_handler);
-        
-        // Enable the UART interrupt at the system level
-        irq_set_enabled(uart_irq, true);
-        
+        irq_set_enabled(UART0_IRQ, true);
         // Enable UART RX interrupts (but not TX)
         uart_set_irq_enables(config->uart_instance, true, false);
 
@@ -166,10 +168,6 @@ extern "C"
 
         // Disable UART RX interrupts
         uart_set_irq_enables(config->uart_instance, false, false);
-        
-        // Disable the UART interrupt at the system level
-        int uart_irq = (config->uart_instance == uart0) ? UART0_IRQ : UART1_IRQ;
-        irq_set_enabled(uart_irq, false);
 
         return LD2420_OK;
     }
@@ -182,7 +180,7 @@ extern "C"
         }
 
         const ld2420_ring_buffer_t *rb = &config->rx_ring_buffer;
-        
+
         if (rb->write_idx >= rb->read_idx)
         {
             return rb->write_idx - rb->read_idx;
@@ -201,17 +199,17 @@ extern "C"
         }
 
         ld2420_ring_buffer_t *rb = &config->rx_ring_buffer;
-        
+
         // Check if buffer is empty
         if (rb->read_idx == rb->write_idx)
         {
             return false;
         }
-        
+
         // Read byte from buffer
         *byte = rb->buffer[rb->read_idx];
         rb->read_idx = (rb->read_idx + 1) % LD2420_PICO_RX_BUFFER_SIZE;
-        
+
         return true;
     }
 
@@ -223,13 +221,42 @@ extern "C"
         }
 
         uint16_t bytes_read = 0;
-        
+
         while (bytes_read < length && ld2420_pico_read_byte(config, &buffer[bytes_read]))
         {
             bytes_read++;
         }
-        
+
         return bytes_read;
+    }
+
+    ld2420_status_t ld2420_pico_clear_buffer(ld2420_pico_t *config)
+    {
+        if (config == NULL)
+        {
+            return LD2420_ERROR_INVALID_ARGUMENTS;
+        }
+
+        // Disable interrupts briefly to safely clear the buffer
+        uint32_t save = save_and_disable_interrupts();
+
+        config->rx_ring_buffer.write_idx = 0;
+        config->rx_ring_buffer.read_idx = 0;
+        config->rx_ring_buffer.overflow_count = 0;
+
+        restore_interrupts(save);
+
+        return LD2420_OK;
+    }
+
+    uint32_t ld2420_pico_get_overflow_count(const ld2420_pico_t *config)
+    {
+        if (config == NULL)
+        {
+            return 0;
+        }
+
+        return config->rx_ring_buffer.overflow_count;
     }
 
 #ifdef __cplusplus

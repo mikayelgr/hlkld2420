@@ -1,7 +1,7 @@
 {
   "C_Cpp.default.compileCommands": ["./build/compile_commands.json"],
   "C_Cpp.default.includePath": [
-    "${env:PICO_SDK_PATH}/**",
+    // "${env:PICO_SDK_PATH}/**",
     "${workspaceFolder}/**"
   ],
   "cmake.configureOnOpen": true,
