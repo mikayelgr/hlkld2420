@@ -10,7 +10,7 @@ This example demonstrates how to use the LD2420 library with a Raspberry Pi Pico
 
 ## Building
 
-This example is built **independently** from the main project using the Pico toolchain.
+This example is built **independently** from the main project using the Pico toolchain. It automatically builds the required `ld2420_core` and `ld2420_pico` libraries from source.
 
 ### From the examples/pico directory
 

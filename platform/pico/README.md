@@ -40,45 +40,40 @@ You must have the Raspberry Pi Pico SDK installed and the `PICO_SDK_PATH` enviro
 
 ## Building
 
-Follow the steps below to build the Raspberry Pi Pico target of the project from the root directory:
+The Pico platform library is a standalone CMake project. It depends on the core library, which will be built automatically if not found.
+
+Follow these steps to build from the `platform/pico/` directory:
 
 ### Debug Build
 
-1. **Configure the Project**  
-   Use CMake presets to configure for Pico debug build:
-
-   ```bash
-   cmake --preset pico-debug
-   ```
-
-2. **Compile the Library**  
-   Build the library using the preset:
-
-   ```bash
-   cmake --build --preset pico-debug
-   ```
+```bash
+cd platform/pico
+mkdir -p build/debug
+cd build/debug
+cmake -DCMAKE_BUILD_TYPE=Debug -DPICO_SDK_PATH=$PICO_SDK_PATH ../..
+cmake --build .
+```
 
 ### Release Build
 
-1. **Configure the Project**  
-   Use CMake presets to configure for Pico release build (optimized):
+```bash
+cd platform/pico
+mkdir -p build/release
+cd build/release
+cmake -DCMAKE_BUILD_TYPE=Release -DPICO_SDK_PATH=$PICO_SDK_PATH ../..
+cmake --build .
+```
 
-   ```bash
-   cmake --preset pico-release
-   ```
+## Using the Pico Library in Your Project (no install)
 
-2. **Compile the Library**  
-   Build the library using the preset:
+Add the Pico platform as a subdirectory (it will pull in the core if needed):
 
-   ```bash
-   cmake --build --preset pico-release
-   ```
+```cmake
+add_subdirectory(/path/to/hlkld2420/platform/pico ld2420_pico)
+add_executable(your_pico_app main.c)
+target_link_libraries(your_pico_app PRIVATE ld2420_pico pico_stdlib)
+```
 
 ### Output Location
 
-After a successful build, the compiled library (`libld2420_pico.[a|dll|so]`) will be located in:
-
-- Debug: `build/pico-debug/platform/pico`
-- Release: `build/pico-release/platform/pico`
-
-You can link this library to your application as required.
+The compiled library (`libld2420_pico.a`) will be in the build directory you created.

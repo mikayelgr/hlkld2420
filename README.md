@@ -54,43 +54,36 @@ git clone https://github.com/mikayelgr/hlkld2420.git
 cd hlkld2420
 ```
 
+### Project Structure
+
+This project is now organized as independent CMake projects:
+
+- **core/** - Platform-agnostic core library (standalone CMake project)
+- **platform/pico/** - Raspberry Pi Pico implementation (standalone CMake project)
+- **examples/pico/** - Example projects demonstrating usage
+
+Each component can be built independently or integrated into your project.
+
 ### Building the Library
 
-When building the library, you are going to have two platform choices for now:
+Each library component is an independent CMake project:
 
-- **Native (default)** - Sets the target platform as your machine
-- **Raspberry Pi Pico** - When you want to call this library from your Pico project
+- **Core Library** - Build from the `core/` directory
+- **Raspberry Pi Pico Platform** - Build from the `platform/pico/` directory
 
-The project uses CMake presets for simplified building. To see all available presets:
+Detailed build steps for each component are documented in the corresponding README files:
 
-```bash
-# List all available configure presets
-cmake --list-presets
-
-# List all available build presets
-cmake --build --list-presets
-```
-
-Then configure and build using your chosen preset:
-
-```bash
-# Example: Native release build
-cmake --preset native-release
-cmake --build --preset native-release
-```
-
-Detailed build steps for each of the supported platforms is documented in the corresponding files which you can find in the table.
-
-| Target | Build Process Reference |
+| Component | Build Documentation |
 | ------ | ------------- |
-| Native | [Documentation](./core/README.md) |
-| Raspberry Pi Pico | [Documentation](./platform/pico/README.md) |
+| Core Library | [Documentation](./core/README.md) |
+| Raspberry Pi Pico Platform | [Documentation](./platform/pico/README.md) |
+| Examples | [Documentation](./examples/README.md) |
 
 ## API Documentation
 
 The API is fully documented in the source code headers:
 
-- Core API: [`include/ld2420/ld2420.h`](include/ld2420/ld2420.h)
+- Core API: [`core/include/ld2420/ld2420.h`](core/include/ld2420/ld2420.h)
 - Raspberry Pi Pico implementation: [`platform/pico/include/ld2420/platform/pico/ld2420_pico.h`](platform/pico/include/ld2420/platform/pico/ld2420_pico.h)
 
 ### Constraints
@@ -188,28 +181,48 @@ $$
 
 ## Adding the Library to Another Project
 
-To use the HLK-LD2420 library in your own project, you can fetch it directly from the GitHub repository using CMake's `FetchContent` module.
+Since each component is an independent CMake project, the recommended approach is to build from source without installing anything.
 
-> **Note:** This section describes integration patterns that are still being refined. Please report any issues or suggestions for improvement.
+### Option 1: Add as Subdirectories
 
-### CMake Example
+For a Raspberry Pi Pico project, reference the libraries as subdirectories:
 
-Here's how to integrate the library into your `CMakeLists.txt` for a Raspberry Pi Pico project:
+```cmake
+# Add the core library
+add_subdirectory(/path/to/hlkld2420/core ld2420_core)
+
+# Add the Pico platform library
+add_subdirectory(/path/to/hlkld2420/platform/pico ld2420_pico)
+
+# Link to your executable
+add_executable(your_project main.c)
+target_link_libraries(your_project PRIVATE ld2420_pico)
+```
+
+### Option 2: Use FetchContent (for Git-based projects)
 
 ```cmake
 include(FetchContent)
 
-FetchContent_Declare(hlkld2420
+# Fetch core library
+FetchContent_Declare(ld2420_core
     GIT_REPOSITORY https://github.com/mikayelgr/hlkld2420.git
-    GIT_TAG main  # or specify a specific version/tag
+    GIT_TAG main
+    SOURCE_SUBDIR core
 )
 
-FetchContent_MakeAvailable(hlkld2420)
+# Fetch Pico platform library
+FetchContent_Declare(ld2420_pico
+    GIT_REPOSITORY https://github.com/mikayelgr/hlkld2420.git
+    GIT_TAG main
+    SOURCE_SUBDIR platform/pico
+)
 
-# For your Pico project, add this to your executable
+FetchContent_MakeAvailable(ld2420_core ld2420_pico)
+
+# Link to your executable
 add_executable(your_project main.c)
-target_link_libraries(your_project PRIVATE ld2420_pico pico_stdlib)
-target_include_directories(your_project PRIVATE ${hlkld2420_SOURCE_DIR}/include)
+target_link_libraries(your_project PRIVATE ld2420_pico)
 ```
 
 #### Basic Usage in C with Raspberry Pi Pico

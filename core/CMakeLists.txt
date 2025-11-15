@@ -1,10 +1,12 @@
-# Check if the target already exists before adding it
+cmake_minimum_required(VERSION 3.16)
+project(ld2420_core VERSION 1.0.0 LANGUAGES C)
+
+# Core library
 add_library(ld2420_core ld2420.c)
 
-# Add this instead:
+# Include directories
 target_include_directories(ld2420_core PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 include(CheckCCompilerFlag)
@@ -26,3 +28,5 @@ else()
         "https://github.com/mikayelgr/hlkld2420/issues"
     )
 endif()
+
+# Install and package steps are intentionally omitted for now.

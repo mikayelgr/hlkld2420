@@ -20,16 +20,8 @@ project(ld2420_pico_example C CXX ASM)
 # Initialize Pico SDK
 pico_sdk_init()
 
-include(FetchContent)
-
-# Use local hlkld2420 repository as is
-set(HLKLD2420_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../..")
-message(STATUS "Using local hlkld2420 repository")
-
-FetchContent_Declare(hlkld2420
-    SOURCE_DIR "${HLKLD2420_SOURCE}"
-)
-FetchContent_MakeAvailable(hlkld2420)
+# Always build ld2420 libraries from source for a fully standalone example
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../platform/pico ${CMAKE_CURRENT_BINARY_DIR}/ld2420_pico)
 
 # Create the example executable
 add_executable(basic_example

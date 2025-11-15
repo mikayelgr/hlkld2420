@@ -1,44 +1,41 @@
-# Building the Native Target
+# LD2420 Core Library
 
-Follow the steps below to build the native target of the project from the root directory:
+The core library provides platform-agnostic functionality for the HLK-LD2420 radar module. This is a standalone CMake project that can be built independently.
 
-## Debug Build
+## Building the Core Library
 
-1. **Configure the Project**  
-   Use CMake presets to configure for native debug build:
+Follow these steps to build the core library from the `core/` directory:
 
-   ```bash
-   cmake --preset native-debug
-   ```
+### Debug Build
 
-2. **Compile the Library**  
-   Build the library using the preset:
+```bash
+cd core
+mkdir -p build/debug
+cd build/debug
+cmake -DCMAKE_BUILD_TYPE=Debug ../..
+cmake --build .
+```
 
-   ```bash
-   cmake --build --preset native-debug
-   ```
+### Release Build
 
-## Release Build
+```bash
+cd core
+mkdir -p build/release
+cd build/release
+cmake -DCMAKE_BUILD_TYPE=Release ../..
+cmake --build .
+```
 
-1. **Configure the Project**  
-   Use CMake presets to configure for native release build (optimized):
+## Using the Core Library in Your Project (no install)
 
-   ```bash
-   cmake --preset native-release
-   ```
+Add the core as a subdirectory and link the target directly:
 
-2. **Compile the Library**  
-   Build the library using the preset:
-
-   ```bash
-   cmake --build --preset native-release
-   ```
+```cmake
+add_subdirectory(/path/to/hlkld2420/core ld2420_core)
+add_executable(your_app main.c)
+target_link_libraries(your_app PRIVATE ld2420_core)
+```
 
 ## Output Location
 
-After a successful build, the compiled library (`libld2420_core.[a|dll|so]`) will be located in:
-
-- Debug: `build/native-debug/core`
-- Release: `build/native-release/core`
-
-You can link this library to your application as required.
+The compiled library (`libld2420_core.a`) will be in the build directory you created.
