@@ -8,46 +8,20 @@
 extern "C"
 {
 #endif
-    /**
-     * @brief LD2420 configuration structure for Raspberry Pi Pico platform.
-     */
-    typedef struct
-    {
-        unsigned char rx_pin;
-        unsigned char tx_pin;
-        uart_inst_t *uart_instance;
-    } ld2420_pico_t;
+    typedef void (*ld2420_rx_callback_t)(
+        uint8_t uart_index,
+        const uint8_t *packet,
+        uint16_t packet_len);
 
-    /**
-     * @brief Initializes the LD2420 configuration for Raspberry Pi Pico platform.
-     *
-     * This function sets up the LD2420 configuration structure with the specified
-     * UART pins and instance. It prepares the device for communication with the
-     * default baud rate defined by the documentation for the LD2420 module.
-     *
-     * @param config Pointer to the ld2420_pico_t structure to initialize.
-     * @param rx_pin The GPIO pin number for UART RX.
-     * @param tx_pin The GPIO pin number for UART TX.
-     * @param uart_instance The UART instance to use (e.g., uart0 or uart1).
-     * @return Status of the initialization as an ld2420_status_t value.
-     */
-    ld2420_status_t ld2420_pico_init(ld2420_pico_t *config, unsigned char rx_pin, unsigned char tx_pin, uart_inst_t *uart_instance);
+    ld2420_status_t ld2420_pico_init(
+        uart_inst_t *uart_instance,
+        const uint8_t rx_pin,
+        const uint8_t tx_pin,
+        const ld2420_rx_callback_t rx_callback);
 
-    /**
-     * @brief Sends data to the LD2420 module via UART.
-     * @param config Pointer to the ld2420_pico_t structure.
-     * @param data Pointer to the data buffer to send.
-     * @param length Length of the data buffer.
-     * @return Status of the send operation as an ld2420_status_t value.
-     */
-    ld2420_status_t ld2420_pico_send(ld2420_pico_t *config, const unsigned char *data, const uint8_t length);
-
-    /**
-     * @brief Deinitializes the LD2420 configuration for Raspberry Pi Pico platform.
-     * @param config Pointer to the ld2420_pico_t structure to deinitialize.
-     * @return Status of the deinitialization as an ld2420_status_t value.
-     */
-    ld2420_status_t ld2420_pico_deinit(ld2420_pico_t *config);
+    void ld2420_pico_process(uint8_t uart_index);
+    ld2420_status_t ld2420_pico_deinit(uart_inst_t *uart_instance);
+    ld2420_status_t ld2420_pico_send_safe(uart_inst_t *uart_instance, const uint8_t *data, const uint16_t length);
 #ifdef __cplusplus
 }
 #endif
