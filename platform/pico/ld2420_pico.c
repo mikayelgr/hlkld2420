@@ -3,21 +3,22 @@
 #include <hardware/gpio.h>
 #include <hardware/irq.h>
 #include <pico/mutex.h>
+#include <stdio.h>
 
 /**
  * @brief Validates if the provided RX and TX pins correspond to the specified UART instance.
  */
 static inline bool validate_uart_pin_pair_instance(
-    const uint8_t rx_pin,
     const uint8_t tx_pin,
+    const uint8_t rx_pin,
     const uart_inst_t *uart_instance)
 {
     if (rx_pin == tx_pin)
         return false;
-    return ((rx_pin == 0 && tx_pin == 1 && uart_instance == uart0) ||   // UART0
-            (rx_pin == 4 && tx_pin == 5 && uart_instance == uart1) ||   // UART1
-            (rx_pin == 8 && tx_pin == 9 && uart_instance == uart1) ||   // UART1
-            (rx_pin == 12 && tx_pin == 13 && uart_instance == uart1) || // UART1
+    return ((tx_pin == 0 && rx_pin == 1 && uart_instance == uart0) ||   // UART0
+            (tx_pin == 4 && rx_pin == 5 && uart_instance == uart1) ||   // UART1
+            (tx_pin == 8 && rx_pin == 9 && uart_instance == uart1) ||   // UART1
+            (tx_pin == 12 && rx_pin == 13 && uart_instance == uart1) || // UART1
             (tx_pin == 16 && rx_pin == 17 && uart_instance == uart0)    // UART0
     );
 }
@@ -51,20 +52,20 @@ typedef struct
 } ld2420_uart_rx_t;
 
 // uart rx structures for uart0 and uart1
-static ld2420_uart_rx_t uart_rx[2];
+static ld2420_uart_rx_t uart_rx_buffers[2];
 static inline void __init_uart_rx_buffer__(uint8_t idx)
 {
-    uart_rx[idx].head = 0;
-    uart_rx[idx].tail = 0;
-    uart_rx[idx].overflow = 0;
+    uart_rx_buffers[idx].head = 0;
+    uart_rx_buffers[idx].tail = 0;
+    uart_rx_buffers[idx].overflow = 0;
 }
 
 // rx callback functions for uart0 and uart1
-static ld2420_rx_callback_t rx_cbs[2] = {NULL, NULL};
+static ld2420_rx_callback_t rx_callbacks[2] = {NULL, NULL};
 
-static void uart0_rx_irq_handler(void)
+static __noinline void uart0_rx_irq_handler(void)
 {
-    ld2420_uart_rx_t *rb = &uart_rx[0];
+    ld2420_uart_rx_t *rb = &uart_rx_buffers[0];
     while (uart_is_readable(uart0))
     {
         uint8_t c = uart_getc(uart0);
@@ -84,9 +85,9 @@ static void uart0_rx_irq_handler(void)
     }
 }
 
-static void uart1_rx_irq_handler(void)
+static __noinline void uart1_rx_irq_handler(void)
 {
-    ld2420_uart_rx_t *rb = &uart_rx[1];
+    ld2420_uart_rx_t *rb = &uart_rx_buffers[1];
     while (uart_is_readable(uart1))
     {
         uint8_t c = uart_getc(uart1);
@@ -106,19 +107,50 @@ static void uart1_rx_irq_handler(void)
     }
 }
 
-void ld2420_pico_process(uint8_t uart_index)
-{
-    if (uart_index > 1)
-        return;
-    // TODO: Implement processing logic to read from the ring buffer and invoke the callback
-    // This function should read available data from the ring buffer for the specified UART index,
-    // assemble complete packets, and call the registered rx_callback with the received packet data.
-}
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+    const int16_t ld2420_pico_process(uint8_t uart_index)
+    {
+        if (uart_index > 1)
+        {
+            printf("ERROR: Invalid UART index %d\n", uart_index);
+            return -1;
+        }
+
+        if (rx_callbacks[uart_index] == NULL)
+        {
+            printf("ERROR: No callback registered for UART %d\n", uart_index);
+            return -1;
+        }
+
+        ld2420_uart_rx_t *rb = &uart_rx_buffers[uart_index];
+        printf("DEBUG: head=%d, tail=%d, overflow=%d\n", rb->head, rb->tail, rb->overflow);
+
+        // Drain available bytes from ring buffer and pass to callback
+        int byte_count = 0;
+        while (rb->tail != rb->head)
+        {
+            uint8_t byte = rb->buf[rb->tail];
+            rb->tail = (rb->tail + 1) % LD2420_UART_RINGBUF_SIZE;
+            __asm volatile("" ::: "memory");
+            rx_callbacks[uart_index](uart_index, &byte, 1);
+            byte_count++;
+        }
+
+        if (byte_count > 0)
+        {
+            printf("DEBUG: Processed %d bytes\n", byte_count);
+            return byte_count;
+        }
+        else
+        {
+            printf("DEBUG: No bytes in buffer\n");
+            return 0;
+        }
+    }
+
     /**
      * A mutex to protect UART TX operations, ensuring thread-safe access
      * when multiple threads attempt to send data simultaneously.
@@ -128,7 +160,7 @@ extern "C"
      */
     auto_init_mutex(ld2420_uart_tx_mutex);
 
-    ld2420_status_t ld2420_pico_send_safe(
+    const ld2420_status_t ld2420_pico_send_safe(
         uart_inst_t *uart_instance,
         const uint8_t *buffer,
         const uint16_t buffer_size)
@@ -140,32 +172,48 @@ extern "C"
             return LD2420_ERROR_INVALID_ARGUMENTS;
         }
 
-        for (uint16_t i = 0; i < buffer_size; i++)
-            uart_putc_raw(uart_instance, buffer[i]);
+        uart_write_blocking(uart_instance, buffer, buffer_size);
         mutex_exit(&ld2420_uart_tx_mutex);
         return LD2420_OK;
     }
 
-    ld2420_status_t ld2420_pico_init(
+    const ld2420_status_t ld2420_pico_init(
         uart_inst_t *uart_instance,
-        const uint8_t rx_pin,
         const uint8_t tx_pin,
+        const uint8_t rx_pin,
         const ld2420_rx_callback_t rx_callback)
     {
-        if (!validate_uart_pin_pair_instance(rx_pin, tx_pin, uart_instance))
+        if (!validate_uart_pin_pair_instance(tx_pin, rx_pin, uart_instance))
         {
+            printf("ERROR: Invalid TX/RX pin pair (%d, %d) for the specified UART instance\n", tx_pin, rx_pin);
             return LD2420_ERROR_INVALID_ARGUMENTS;
         }
 
         int8_t idx = decide_uart_instance_number(uart_instance);
         if (idx < 0)
+        {
+            printf("ERROR: Unable to decide UART instance number\n");
             return LD2420_ERROR_INVALID_ARGUMENTS;
+        }
 
-        __init_uart_rx_buffer__(idx);
-        rx_cbs[idx] = rx_callback; // Set the RX callback
+        // Disable interrupts first to prevent data from being buffered during init
+        if (idx == 0)
+            irq_set_enabled(UART0_IRQ, false);
+        else
+            irq_set_enabled(UART1_IRQ, false);
 
         // Initialize UART first with the baud rate
-        uart_init(uart_instance, LD2420_BAUD_RATE);
+        uint baudrate = uart_init(uart_instance, LD2420_BAUD_RATE);
+        printf("DEBUG: UART initialized with baud rate %u\n", baudrate);
+
+        // Flush UART: ensure it's idle and clear any stale data
+        uart_tx_wait_blocking(uart_instance); // Wait for TX to complete
+        while (uart_is_readable(uart_instance))
+            uart_getc(uart_instance); // Clear RX FIFO
+
+        // Now that hardware is clean, reset the ring buffer and set callback
+        __init_uart_rx_buffer__(idx);
+        rx_callbacks[idx] = rx_callback;
 
         // We are enabling FIFO for the provided UART instance because it helps in buffering the
         // data and reduces CPU load. Additionally, it improves data integrity during communication.
@@ -195,6 +243,7 @@ extern "C"
             irq_set_enabled(UART1_IRQ, true);
             break;
         default:
+            printf("ERROR: Unknown UART instance number %d\n", idx);
             return LD2420_ERROR_INVALID_ARGUMENTS | LD2420_ERROR_UNKNOWN;
         }
 
@@ -205,7 +254,7 @@ extern "C"
         return LD2420_OK;
     }
 
-    ld2420_status_t ld2420_pico_deinit(uart_inst_t *uart_instance)
+    const ld2420_status_t ld2420_pico_deinit(uart_inst_t *uart_instance)
     {
         int8_t idx = decide_uart_instance_number(uart_instance);
         if (idx == 0)
@@ -219,7 +268,7 @@ extern "C"
         uart_deinit(uart_instance);
 
         __init_uart_rx_buffer__(idx);
-        rx_cbs[idx] = NULL;
+        rx_callbacks[idx] = NULL;
         return LD2420_OK;
     }
 
