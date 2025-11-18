@@ -3,6 +3,14 @@
 #include <stdint.h>
 
 /**
+ * IMPORTANT: The LD2420 protocol uses LITTLE-ENDIAN byte order for all multi-byte values.
+ * This library uses explicit little-endian byte-order conversion functions to ensure
+ * correct operation on both little-endian and big-endian host architectures.
+ * All multi-byte fields (frame_size, cmd_echo, status, etc.) are read/written using
+ * read_le16()/write_le16() helpers that handle byte-order conversion transparently.
+ */
+
+/**
  * The baud rate for HLK-LD2420 communication needs to be set to 115,200 from the official
  * documentation at https://hlktech.net/index.php?id=1291.
  */
@@ -90,9 +98,12 @@ extern "C"
         LD2420_PARAM_MAINTAIN_BASE = (unsigned short)0x20,
     } ld2420_command_parameter_t;
 
-    ld2420_status_t ld2420_parse_raw_rx_command_packet(
+    ld2420_status_t ld2420_parse_rx_buffer(
+        // Input variables
         const uint8_t *in_raw_rx_buffer,
         const uint8_t in_raw_rx_buffer_size,
+
+        // Pointers to output variables
         uint16_t *out_frame_size,
         uint16_t *out_cmd_echo,
         uint16_t *out_status);

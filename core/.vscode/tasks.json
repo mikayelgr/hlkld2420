@@ -1,0 +1,106 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMake: Configure",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-B",
+        "${workspaceFolder}/build",
+        "-DCMAKE_TESTING_ENABLED=ON",
+        "-DCMAKE_BUILD_TYPE=Debug",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: build",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "${workspaceFolder}/build", "--config", "Debug"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "dependsOn": ["CMake: Configure"],
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Build Tests",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build",
+        "--target",
+        "ld2420_test",
+        "--config",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "dependsOn": ["CMake: Configure"],
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "CTest: Run All Tests",
+      "type": "shell",
+      "command": "ctest",
+      "args": ["--output-on-failure", "--verbose"],
+      "options": {
+        "cwd": "${workspaceFolder}/build"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "dependsOn": ["Build Tests"],
+      "problemMatcher": []
+    },
+    {
+      "label": "CTest: Run Tests with Output",
+      "type": "shell",
+      "command": "ctest",
+      "args": ["--output-on-failure", "--verbose", "--progress"],
+      "options": {
+        "cwd": "${workspaceFolder}/build"
+      },
+      "group": "test",
+      "dependsOn": ["Build Tests"],
+      "problemMatcher": []
+    },
+    {
+      "label": "CTest: Run Specific Test",
+      "type": "shell",
+      "command": "ctest",
+      "args": ["-R", "ld2420_test", "--output-on-failure", "--verbose"],
+      "options": {
+        "cwd": "${workspaceFolder}/build"
+      },
+      "group": "test",
+      "dependsOn": ["Build Tests"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Clean Build",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "${workspaceFolder}/build"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}

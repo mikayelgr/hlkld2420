@@ -1,0 +1,18 @@
+{
+  "cmake.generator": "Unix Makefiles",
+  "cmake.configureOnOpen": true,
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.configureSettings": {
+    "CMAKE_TESTING_ENABLED": "ON",
+    "CMAKE_BUILD_TYPE": "Debug",
+    "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+  },
+  "cmake.debugConfig": {
+    "MIMode": "lldb"
+  },
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "files.associations": {
+    "*.h": "c",
+    "*.c": "c"
+  }
+}

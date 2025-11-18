@@ -9,24 +9,34 @@ target_include_directories(ld2420_core PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-include(CheckCCompilerFlag)
-
-# The LD2420 protocol uses little-endian byte order. This implementation currently
-# relies on little-endian target architecture. We attempt to enforce this with the
-# -mlittle-endian compiler flag.
-check_c_compiler_flag(-mlittle-endian COMPILER_SUPPORTS_MLITTLE_ENDIAN)
-if(COMPILER_SUPPORTS_MLITTLE_ENDIAN)
-    message(STATUS "The compiler supports -mlittle-endian - enforcing little-endian byte order")
-    target_compile_options(ld2420_core PRIVATE -mlittle-endian)
+# The LD2420 protocol uses little-endian byte order for all multi-byte values.
+# This implementation uses explicit byte-order conversion and works on any architecture.
+include(TestBigEndian)
+test_big_endian(IS_BIG_ENDIAN)
+if(IS_BIG_ENDIAN)
+    message(STATUS "LD2420: Building for big-endian architecture '${CMAKE_SYSTEM_PROCESSOR}'")
+    message(STATUS "LD2420: Using explicit little-endian byte conversion for protocol compliance")
 else()
-    # If the compiler doesn't support the flag, we can't guarantee byte order.
-    # Most modern architectures (x86, x64, ARM default) are little-endian anyway.
-    message(WARNING
-        "Compiler does not support -mlittle-endian flag. This library assumes the target\n"
-        "architecture is little-endian. If you are targeting a big-endian system, this\n"
-        "library will NOT work correctly. Please report this at:\n"
-        "https://github.com/mikayelgr/hlkld2420/issues"
-    )
+    message(STATUS "LD2420: Building for little-endian architecture '${CMAKE_SYSTEM_PROCESSOR}'")
 endif()
 
-# Install and package steps are intentionally omitted for now.
+# Adding tests if testing is enabled
+if(CMAKE_TESTING_ENABLED)
+    # Making sure test dependencies are enabled
+    include(CTest)
+    include(FetchContent)
+    FetchContent_Declare(
+        Unity
+        GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
+        GIT_TAG v2.6.1
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(Unity)
+
+    # Adding the test executable
+    add_executable(ld2420_test ld2420_test.c)
+    # Linking against unity framework and the core library
+    target_link_libraries(ld2420_test PRIVATE ld2420_core unity)
+    # Registering within CTest
+    add_test(NAME ld2420_test COMMAND ld2420_test)
+endif()
