@@ -51,7 +51,23 @@ void test__rx_buffer_must_parse(void)
 
 void test__rx_buffer_must_fail(void)
 {
-    TEST_ASSERT_EQUAL(1, 1);
+    static const uint8_t OPEN_COMMAND_MODE_RX_BUFFER[] = {
+        0xFD, 0xFC, 0xFB, // malformed header missing one byte
+        0x08, 0x00, 0xFF, 0x01,
+        0x00, 0x00, 0x02, 0x00, 0x20, 0x00, 0x04, 0x03, 0x02, 0x01};
+    static const size_t OPEN_COMMAND_MODE_RX_BUFFER_SIZE = sizeof(OPEN_COMMAND_MODE_RX_BUFFER);
+
+    uint16_t frame_size = -1;
+    uint16_t cmd_echo = -1;
+    uint16_t status = -1;
+
+    ld2420_status_t parse_status = ld2420_parse_rx_buffer(
+        OPEN_COMMAND_MODE_RX_BUFFER,
+        OPEN_COMMAND_MODE_RX_BUFFER_SIZE,
+        &frame_size,
+        &cmd_echo,
+        &status);
+    TEST_ASSERT_NOT_EQUAL(LD2420_OK, parse_status);
 }
 
 int main(void)
