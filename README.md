@@ -103,12 +103,12 @@ The minimum size for a packet received (RX) from the sensor is **14 bytes**. Thi
 
 The total size is calculated as:
 
-$$$
+$$
 \underbrace{4 \text{ bytes}}_{\text{Header}} +
 \underbrace{2 \text{ bytes}}_{\text{Length}} +
 \underbrace{4 \text{ bytes}}_{\text{Min. RX Data}} +
 \underbrace{4 \text{ bytes}}_{\text{Footer}} = 14 \text{ bytes}
-$$$
+$$
 
 ___
 
@@ -131,9 +131,9 @@ The command data payload is $35 \times 4 = 140$ bytes.
 
 The total size is calculated as:
 
-$$$
+$$
 \underbrace{4 \text{ bytes}}_{\text{Header}} + \underbrace{2 \text{ bytes}}_{\text{Length}} + \underbrace{2 \text{ bytes}}_{\text{Status}} + \underbrace{2 \text{ bytes}}_{\text{Command}} + \underbrace{140 \text{ bytes}}_{\text{Max Data}} + \underbrace{4 \text{ bytes}}_{\text{End}} = 154 \text{ bytes}
-$$$
+$$
 
 ___
 
@@ -152,9 +152,9 @@ Based on the "Send Command Components" structure, the packet is composed of:
 
 The total size is calculated as:
 
-$$$
+$$
 \underbrace{4 \text{ bytes}}_{\text{Header}} + \underbrace{2 \text{ bytes}}_{\text{Length}} + \underbrace{2 \text{ bytes}}_{\text{Min. Data}} + \underbrace{4 \text{ bytes}}_{\text{End}} = 12 \text{ bytes}
-$$$
+$$
 
 ___
 
@@ -178,9 +178,9 @@ The total number of parameters ($N$) from Table 2 is **35** [$1+1+1+16+16$]. The
 
 The total size is calculated as:
 
-$$$
+$$
 \underbrace{4 \text{ bytes}}_{\text{Header}} + \underbrace{2 \text{ bytes}}_{\text{Length}} + \underbrace{2 \text{ bytes}}_{\text{Command}} + \underbrace{210 \text{ bytes}}_{\text{Max Data}} + \underbrace{4 \text{ bytes}}_{\text{End}} = 222 \text{ bytes}
-$$$
+$$
 
 ## Adding the Library to Another Project
 
