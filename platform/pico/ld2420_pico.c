@@ -51,17 +51,69 @@ typedef struct
     volatile uint16_t overflow;
 } ld2420_uart_rx_t;
 
-// uart rx structures for uart0 and uart1
+/**
+ * @brief RX ring buffers for UART0 and UART1
+ *
+ * One buffer per UART instance:
+ *  - Index 0 maps to `uart0`
+ *  - Index 1 maps to `uart1`
+ *
+ * Concurrency and ownership model:
+ *  - Written in interrupt context by the corresponding RX ISR
+ *    (`uart0_rx_irq_handler` / `uart1_rx_irq_handler`), which stores bytes
+ *    at `head` and advances it.
+ *  - Drained in `ld2420_pico_process(uart_index)` on the main thread, which
+ *    reads bytes from `tail` and advances it, forwarding data to the
+ *    registered callback in `rx_callbacks`.
+ *  - Fields are declared `volatile` to ensure ISR/main-core visibility; short
+ *    compiler barriers are placed around updates to prevent reordering.
+ *
+ * Capacity and overflow behavior:
+ *  - Each ring holds `LD2420_UART_RINGBUF_SIZE` bytes (currently 512).
+ *  - When the buffer is full, the incoming byte is dropped and the
+ *    `overflow` counter is incremented (old data is preserved).
+ *
+ * Lifecycle:
+ *  - Buffers are cleared by `__init_uart_rx_buffer__()` during init/deinit
+ *    and before enabling IRQs to avoid mixing stale data with new frames.
+ *
+ * Rationale:
+ *  - File-static, contiguous storage avoids dynamic allocation and keeps the
+ *    ISR fast and predictable.
+ */
 static ld2420_uart_rx_t uart_rx_buffers[2];
+
+/**
+ * @brief Callback function pointers for UART receive operations
+ *
+ * This array stores callback function pointers for handling received data on UART interfaces.
+ * The callbacks are invoked when data is received on the corresponding UART port.
+ *
+ * @details
+ * - Index 0: Callback function for UART0 receive operations
+ * - Index 1: Callback function for UART1 receive operations
+ *
+ * Each callback is of type ld2420_rx_callback_t and can be registered by the application
+ * to process incoming data from the LD2420 sensor connected to the respective UART port.
+ *
+ * @note
+ * - Callbacks are initialized to NULL and must be set before UART receive operations begin
+ * - The callback function signature is defined by ld2420_rx_callback_t type
+ * - Callbacks are typically invoked in interrupt context, so they should be kept short
+ *   and avoid blocking operations
+ *
+ * @see ld2420_rx_callback_t
+ * @see UART receive configuration and initialization functions
+ */
+// rx callback functions for uart0 and uart1
+static ld2420_rx_callback_t rx_callbacks[2] = {NULL, NULL};
+
 static inline void __init_uart_rx_buffer__(uint8_t idx)
 {
     uart_rx_buffers[idx].head = 0;
     uart_rx_buffers[idx].tail = 0;
     uart_rx_buffers[idx].overflow = 0;
 }
-
-// rx callback functions for uart0 and uart1
-static ld2420_rx_callback_t rx_callbacks[2] = {NULL, NULL};
 
 static __noinline void uart0_rx_irq_handler(void)
 {
@@ -85,6 +137,13 @@ static __noinline void uart0_rx_irq_handler(void)
     }
 }
 
+/**
+ * @brief UART1 RX interrupt handler
+ *
+ * This function is invoked when data is received on UART1. It reads incoming bytes
+ * from the UART hardware and stores them in a ring buffer for later processing.
+ * If the ring buffer is full, it increments an overflow counter and drops the incoming bytes.
+ */
 static __noinline void uart1_rx_irq_handler(void)
 {
     ld2420_uart_rx_t *rb = &uart_rx_buffers[1];
