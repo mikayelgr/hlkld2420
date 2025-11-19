@@ -1,3 +1,10 @@
+/*
+ * LD2420 one-shot buffer parser
+ * -----------------------------
+ * Parses a fully assembled packet (header..footer) into key metadata fields.
+ * The streaming counterpart assembles frames and then calls this routine.
+ */
+
 #include <stddef.h>
 #include <stdbool.h>
 #include <memory.h>
@@ -5,25 +12,15 @@
 #include "ld2420/ld2420.h"
 
 /**
- * Helper function to read a 16-bit little-endian value from a buffer.
- * This function explicitly reads bytes in little-endian order regardless of host endianness.
- *
- * The LD2420 protocol uses little-endian byte order for all multi-byte values:
- * - Byte 0: LSB (least significant byte)
- * - Byte 1: MSB (most significant byte)
- *
+ * Read a 16-bit little-endian value from a buffer regardless of host endianness.
  * Example: bytes [0xFF, 0x01] represent 0x01FF in little-endian.
  */
-static inline uint16_t read_le16(const uint8_t *buffer)
+static inline uint16_t read_le16(const uint8_t *b)
 {
-    return ((uint16_t)buffer[0]) |     // LSB
-           ((uint16_t)buffer[1] << 8); // MSB
+    return (uint16_t)b[0] | ((uint16_t)b[1] << 8);
 }
 
-/**
- * Helper function to write a 16-bit value to a buffer in little-endian byte order.
- * This ensures correct byte order when sending commands to the LD2420 module.
- */
+/** Write a 16-bit value to a buffer in little-endian byte order. */
 static inline void write_le16(uint8_t *buffer, uint16_t value)
 {
     buffer[0] = (uint8_t)(value & 0xFF);        // LSB
@@ -31,9 +28,8 @@ static inline void write_le16(uint8_t *buffer, uint16_t value)
 }
 
 /**
- * Given an RX buffer and its size received from the LD2420 module, this function
- * validates the basic metadata of the packet such as the header and footer bytes
- * as well as size constraints.
+ * Validate basic packet metadata (header/footer/size constraints).
+ * Returns LD2420_OK when the buffer plausibly represents an LD2420 packet.
  */
 static inline const ld2420_status_t __ld2420_rx_validate_packet_metadata__(
     const uint8_t *raw_rx_buffer,
@@ -59,13 +55,8 @@ static inline const ld2420_status_t __ld2420_rx_validate_packet_metadata__(
 }
 
 /**
- * This function is responsible for taking the raw buffer data received from the LD2420 module
- * as bytes and starting the initial phase of the population of the library-native command packet.
- * The function verifies the integrity of the packet by parsing the header and the received data
- * size fields.
- *
- * @note The assumptions made inside this function will need to be refined as the implementation
- *       matures further.
+ * Extract the intra-frame data size from a packet using little-endian order.
+ * Validates that the size is strictly positive.
  */
 static inline const ld2420_status_t __get_frame_size__(
     const uint8_t *buffer,
@@ -86,8 +77,8 @@ static inline const ld2420_status_t __get_frame_size__(
 }
 
 /**
- * This function makes sure that the packet metadata such as the overall size of the packet
- * matches the expected size based on the frame size extracted earlier.
+ * Validate that the overall packet size matches the expected value derived from
+ * the intra-frame length, and that the header/footer match the protocol markers.
  */
 static inline const ld2420_status_t __validate_packet__(
     const uint8_t *buffer,
@@ -150,20 +141,11 @@ ld2420_status_t ld2420_parse_rx_buffer(
     if (*out_frame_size < 4)
         return LD2420_ERROR_INVALID_FRAME_SIZE;
 
-    // Packet layout (all multi-byte values in little-endian):
-    // [0..3]   Header (4 bytes)
-    // [4..5]   Frame Size (2 bytes, little-endian)
-    // [6..7]   Command Echo (2 bytes, little-endian)
-    // [8..9]   Status (2 bytes, little-endian)
-    // [10..]   Payload data (variable length)
-    // [end-3..end] Footer (4 bytes)
-
 #define CMD_ECHO_OFFSET (sizeof(LD2420_BEG_COMMAND_PACKET) + 2)
 #define STATUS_OFFSET (CMD_ECHO_OFFSET + 2)
 
-    // Extract command echo using little-endian byte order. Making sure to discard
-    // any higher-order bits by casting to uint8_t. This makes sure that the last
-    // 1 appended to the command is ignored.
+    // Extract command echo using little-endian byte order. Per protocol variants,
+    // the returned commands append a trailing bit; we normalize by casting to uint8_t.
     *out_cmd_echo = (uint8_t)read_le16(in_raw_rx_buffer + CMD_ECHO_OFFSET);
 
     // Extract status using little-endian byte order.
