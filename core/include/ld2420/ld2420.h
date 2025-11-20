@@ -57,18 +57,18 @@ extern "C"
 #endif
     typedef enum
     {
-        LD2420_OK = 0,                    /** Success */
-        LD2420_ERROR_UNKNOWN,             /** Unspecified failure */
-        LD2420_ERROR_INVALID_PACKET,      /** Packet content invalid */
-        LD2420_ERROR_INVALID_BUFFER,      /** Null or malformed buffer pointer */
-        LD2420_ERROR_INVALID_BUFFER_SIZE, /** Buffer size out of range or unexpected */
-        LD2420_ERROR_INVALID_FRAME,       /** Frame content invalid */
-        LD2420_ERROR_INVALID_FRAME_SIZE,  /** Intra-frame length field invalid (0 or too small) */
-        LD2420_ERROR_BUFFER_TOO_SMALL,    /** Computed frame exceeds internal buffer limits */
-        LD2420_ERROR_INVALID_HEADER,      /** Header bytes mismatch */
-        LD2420_ERROR_INVALID_FOOTER,      /** Footer bytes mismatch */
-        LD2420_ERROR_INVALID_ARGUMENTS,   /** One or more arguments invalid */
-        LD2420_ERROR_ALREADY_INITIALIZED, /** Re-initialization not allowed in specific contexts */
+        LD2420_STATUS_OK = 0,                    /** Success */
+        LD2420_STATUS_ERROR_UNKNOWN,             /** Unspecified failure */
+        LD2420_STATUS_ERROR_INVALID_PACKET,      /** Packet content invalid */
+        LD2420_STATUS_ERROR_INVALID_BUFFER,      /** Null or malformed buffer pointer */
+        LD2420_STATUS_ERROR_INVALID_BUFFER_SIZE, /** Buffer size out of range or unexpected */
+        LD2420_STATUS_ERROR_INVALID_FRAME,       /** Frame content invalid */
+        LD2420_STATUS_ERROR_INVALID_FRAME_SIZE,  /** Intra-frame length field invalid (0 or too small) */
+        LD2420_STATUS_ERROR_BUFFER_TOO_SMALL,    /** Computed frame exceeds internal buffer limits */
+        LD2420_STATUS_ERROR_INVALID_HEADER,      /** Header bytes mismatch */
+        LD2420_STATUS_ERROR_INVALID_FOOTER,      /** Footer bytes mismatch */
+        LD2420_STATUS_ERROR_INVALID_ARGUMENTS,   /** One or more arguments invalid */
+        LD2420_STATUS_ERROR_ALREADY_INITIALIZED, /** Re-initialization not allowed in specific contexts */
     } ld2420_status_t;
 
     /** Enumeration of command IDs for the LD2420 module. */
@@ -106,7 +106,7 @@ extern "C"
      * - out_status: Status word emitted by the device.
      *
      * Return:
-     * - LD2420_OK on success.
+     * - LD2420_STATUS_OK on success.
      * - Error codes on invalid header/footer, buffer size mismatch, or bad length.
      */
     ld2420_status_t ld2420_parse_rx_buffer(

@@ -35,10 +35,10 @@ void test__rx_buffer_must_parse(void)
         &cmd_echo,
         &status);
 
-    TEST_ASSERT_EQUAL(LD2420_OK, parse_status);
+    TEST_ASSERT_EQUAL(LD2420_STATUS_OK, parse_status);
     TEST_ASSERT_EQUAL(8, frame_size);
     TEST_ASSERT_EQUAL(0xFF, cmd_echo);
-    TEST_ASSERT_EQUAL(0, status);
+    TEST_ASSERT_EQUAL(LD2420_STATUS_OK, status);
 }
 
 void test__rx_buffer_must_fail(void)
@@ -59,7 +59,7 @@ void test__rx_buffer_must_fail(void)
         &frame_size,
         &cmd_echo,
         &status);
-    TEST_ASSERT_NOT_EQUAL(LD2420_OK, parse_status);
+    TEST_ASSERT_NOT_EQUAL(LD2420_STATUS_OK, parse_status);
 }
 
 int main(void)

@@ -16,9 +16,15 @@ test_big_endian(IS_BIG_ENDIAN)
 if(IS_BIG_ENDIAN)
     message(STATUS "LD2420: Building for big-endian architecture '${CMAKE_SYSTEM_PROCESSOR}'")
     message(STATUS "LD2420: Using explicit little-endian byte conversion for protocol compliance")
+    # Define a compile-time flag to indicate big-endian platform
+    target_compile_definitions(ld2420_core PRIVATE -DLD2420_PLATFORM_BE)
 else()
     message(STATUS "LD2420: Building for little-endian architecture '${CMAKE_SYSTEM_PROCESSOR}'")
 endif()
+
+# print all custom defined compile definitions
+get_target_property(LD2420_CORE_COMPILE_DEFS ld2420_core COMPILE_DEFINITIONS)
+message(STATUS "LD2420: Compile definitions: ${LD2420_CORE_COMPILE_DEFS}")
 
 # Adding tests if testing is enabled
 if(CMAKE_TESTING_ENABLED)
