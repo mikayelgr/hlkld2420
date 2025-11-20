@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(ld2420_core VERSION 1.0.0 LANGUAGES C)
 
 # Core library
-add_library(ld2420_core ld2420.c)
+add_library(ld2420_core ld2420.c ld2420_stream.c)
 
 # Include directories
 target_include_directories(ld2420_core PUBLIC
@@ -41,8 +41,11 @@ if(CMAKE_TESTING_ENABLED)
 
     # Adding the test executable
     add_executable(ld2420_test ld2420_test.c)
+    add_executable(ld2420_stream_test ld2420_stream_test.c)
     # Linking against unity framework and the core library
     target_link_libraries(ld2420_test PRIVATE ld2420_core unity)
+    target_link_libraries(ld2420_stream_test PRIVATE ld2420_core unity)
     # Registering within CTest
     add_test(NAME ld2420_test COMMAND ld2420_test)
+    add_test(NAME ld2420_stream_test COMMAND ld2420_stream_test)
 endif()
