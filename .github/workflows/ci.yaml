@@ -4,14 +4,14 @@ on:
         branches:
             - main
         paths:
-            - 'core/**'
-            - 'include/**'
-            - 'platform/**'
-            - 'tests/**'
-            - 'CMakeLists.txt'
-            - 'CMakePresets.json'
-            - 'cmake/**'
-            - '.github/workflows/ci.yaml'
+            - "core/**"
+            - "include/**"
+            - "platform/**"
+            - "tests/**"
+            - "CMakeLists.txt"
+            - "CMakePresets.json"
+            - "cmake/**"
+            - ".github/workflows/ci.yaml"
 
 jobs:
     test:
@@ -19,7 +19,13 @@ jobs:
         name: Build and Run Native Tests
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v2
-            - run: sudo apt-get install cmake build-essential
+              uses: actions/checkout@v4
+            - name: Install dependencies
+              run: sudo apt-get update && sudo apt-get install -y cmake build-essential
             - name: Build and run tests
-              run: cmake --preset native-debug && cmake --build --preset native-debug && ctest --preset native-debug --output-on-failure
+              run: |
+                  mkdir -p core/build
+                  cd core/build
+                  cmake -DCMAKE_BUILD_TYPE=Debug -DLD2420_CORE_BUILD_TESTS=ON ..
+                  cmake --build .
+                  ctest --output-on-failure
