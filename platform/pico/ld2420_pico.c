@@ -40,6 +40,22 @@ static inline int8_t decide_uart_instance_number(const uart_inst_t *uart_instanc
 // and ensure that we have enough space to handle incoming data without overflow.
 #define LD2420_UART_RINGBUF_SIZE 512u
 
+// Maximum frame size for LD2420 sensor (header + data + checksum).
+// Typical frames are 9–27 bytes, but we allow up to 256 for safety.
+#define LD2420_MAX_FRAME_SIZE 256u
+
+// LD2420 protocol frame start-of-frame marker
+#define LD2420_SOF 0xF4u
+
+/**
+ * @brief Frame assembly state machine states.
+ */
+typedef enum
+{
+    LD2420_FRAME_STATE_AWAITING_SOF = 0, // Waiting for start-of-frame marker
+    LD2420_FRAME_STATE_ACCUMULATING = 1  // Accumulating frame bytes after SOF
+} ld2420_frame_state_t;
+
 /**
  * @brief Structure to hold UART RX ring buffer information.
  */
@@ -50,6 +66,21 @@ typedef struct
     volatile uint16_t tail;
     volatile uint16_t overflow;
 } ld2420_uart_rx_t;
+
+/**
+ * @brief Frame assembly state for incoming LD2420 protocol data.
+ *
+ * Accumulates bytes from the ring buffer into complete frames before
+ * delivering them to the user callback. Frames are identified by the
+ * LD2420 SOF marker (0xF4) and contain a length field at byte [1].
+ */
+typedef struct
+{
+    uint8_t buf[LD2420_MAX_FRAME_SIZE];
+    uint16_t len;               // Current frame byte count
+    ld2420_frame_state_t state; // Current assembly state
+    uint16_t expected_len;      // Total frame length (including SOF + length byte)
+} ld2420_frame_assembler_t;
 
 /**
  * @brief RX ring buffers for UART0 and UART1
@@ -84,6 +115,16 @@ typedef struct
 static ld2420_uart_rx_t uart_rx_buffers[2];
 
 /**
+ * @brief Frame assemblers for UART0 and UART1
+ *
+ * One assembler per UART instance (index 0 for uart0, index 1 for uart1).
+ * Accumulates bytes from the ring buffer into complete LD2420 frames before
+ * delivering them to the user callback. This ensures the callback receives
+ * complete, frame-aligned packets rather than individual bytes.
+ */
+static ld2420_frame_assembler_t frame_assemblers[2];
+
+/**
  * @brief Callback function pointers for UART receive operations
  *
  * This array stores callback function pointers for handling received data on UART interfaces.
@@ -113,6 +154,11 @@ static inline void __init_uart_rx_buffer__(uint8_t idx)
     uart_rx_buffers[idx].head = 0;
     uart_rx_buffers[idx].tail = 0;
     uart_rx_buffers[idx].overflow = 0;
+
+    // Also reset the frame assembler
+    frame_assemblers[idx].len = 0;
+    frame_assemblers[idx].state = LD2420_FRAME_STATE_AWAITING_SOF;
+    frame_assemblers[idx].expected_len = 0;
 }
 
 static __noinline void uart0_rx_irq_handler(void)
@@ -170,6 +216,85 @@ static __noinline void uart1_rx_irq_handler(void)
 extern "C"
 {
 #endif
+    /**
+     * @brief Attempt to assemble a complete LD2420 frame from available bytes.
+     *
+     * Implements a simple state machine:
+     *  1. LD2420_FRAME_STATE_AWAITING_SOF: Scan ring buffer for 0xF4 byte
+     *  2. LD2420_FRAME_STATE_ACCUMULATING: Once SOF found, byte[1] is frame length.
+     *     Continue reading until frame is complete, then deliver to callback.
+     *
+     * @param uart_index UART instance (0 or 1)
+     * @return Number of complete frames delivered, or -1 on error
+     */
+    static int16_t __assemble_and_deliver_frames(uint8_t uart_index)
+    {
+        ld2420_uart_rx_t *rb = &uart_rx_buffers[uart_index];
+        ld2420_frame_assembler_t *fa = &frame_assemblers[uart_index];
+        int16_t frame_count = 0;
+
+        while (rb->tail != rb->head)
+        {
+            uint8_t byte = rb->buf[rb->tail];
+            rb->tail = (rb->tail + 1) % LD2420_UART_RINGBUF_SIZE;
+            __asm volatile("" ::: "memory");
+
+            if (fa->state == LD2420_FRAME_STATE_AWAITING_SOF)
+            {
+                // Waiting for SOF marker
+                if (byte == LD2420_SOF)
+                {
+                    fa->buf[0] = byte;
+                    fa->len = 1;
+                    fa->state = LD2420_FRAME_STATE_ACCUMULATING;
+                    fa->expected_len = 0; // Will be set once we read byte[1]
+                }
+                // else: skip this byte, continue scanning
+            }
+            else if (fa->state == LD2420_FRAME_STATE_ACCUMULATING)
+            {
+                // Accumulating frame bytes
+                if (fa->len < LD2420_MAX_FRAME_SIZE)
+                {
+                    fa->buf[fa->len] = byte;
+                    fa->len++;
+
+                    // Byte[1] is the frame length field
+                    if (fa->len == 2)
+                    {
+                        fa->expected_len = byte + 2; // +2 for SOF and length byte itself
+                    }
+
+                    // Check if frame is complete
+                    if (fa->len >= 2 && fa->len == fa->expected_len)
+                    {
+                        // Frame complete: deliver to callback
+                        if (rx_callbacks[uart_index] != NULL)
+                        {
+                            rx_callbacks[uart_index](uart_index, fa->buf, fa->len);
+                            frame_count++;
+                        }
+
+                        // Reset for next frame
+                        fa->len = 0;
+                        fa->state = LD2420_FRAME_STATE_AWAITING_SOF;
+                        fa->expected_len = 0;
+                    }
+                }
+                else
+                {
+                    // Frame buffer overflow: discard and resync
+                    printf("WARN: Frame buffer overflow on UART%d, resyncing\n", uart_index);
+                    fa->len = 0;
+                    fa->state = LD2420_FRAME_STATE_AWAITING_SOF;
+                    fa->expected_len = 0;
+                }
+            }
+        }
+
+        return frame_count;
+    }
+
     const int16_t ld2420_pico_process(uint8_t uart_index)
     {
         if (uart_index > 1)
@@ -185,29 +310,16 @@ extern "C"
         }
 
         ld2420_uart_rx_t *rb = &uart_rx_buffers[uart_index];
-        printf("DEBUG: head=%d, tail=%d, overflow=%d\n", rb->head, rb->tail, rb->overflow);
 
-        // Drain available bytes from ring buffer and pass to callback
-        int byte_count = 0;
-        while (rb->tail != rb->head)
+        // Attempt to assemble and deliver complete frames
+        int16_t frame_count = __assemble_and_deliver_frames(uart_index);
+
+        if (frame_count > 0)
         {
-            uint8_t byte = rb->buf[rb->tail];
-            rb->tail = (rb->tail + 1) % LD2420_UART_RINGBUF_SIZE;
-            __asm volatile("" ::: "memory");
-            rx_callbacks[uart_index](uart_index, &byte, 1);
-            byte_count++;
+            printf("DEBUG: Delivered %d frame(s) on UART%d\n", frame_count, uart_index);
         }
 
-        if (byte_count > 0)
-        {
-            printf("DEBUG: Processed %d bytes\n", byte_count);
-            return byte_count;
-        }
-        else
-        {
-            printf("DEBUG: No bytes in buffer\n");
-            return 0;
-        }
+        return frame_count;
     }
 
     /**

@@ -8,7 +8,7 @@
       "args": [
         "-B",
         "${workspaceFolder}/build",
-        "-DCMAKE_TESTING_ENABLED=ON",
+        "-DLD2420_CORE_BUILD_TESTS=ON",
         "-DCMAKE_BUILD_TYPE=Debug",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
       ],

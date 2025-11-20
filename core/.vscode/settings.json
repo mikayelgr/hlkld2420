@@ -3,7 +3,7 @@
   "cmake.configureOnOpen": true,
   "cmake.buildDirectory": "${workspaceFolder}/build",
   "cmake.configureSettings": {
-    "CMAKE_TESTING_ENABLED": "ON",
+    "LD2420_CORE_BUILD_TESTS": "ON",
     "CMAKE_BUILD_TYPE": "Debug",
     "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
   },

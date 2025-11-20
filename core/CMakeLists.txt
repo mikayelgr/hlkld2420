@@ -27,7 +27,7 @@ get_target_property(LD2420_CORE_COMPILE_DEFS ld2420_core COMPILE_DEFINITIONS)
 message(STATUS "LD2420: Compile definitions: ${LD2420_CORE_COMPILE_DEFS}")
 
 # Adding tests if testing is enabled
-if(CMAKE_TESTING_ENABLED)
+if(DEFINED LD2420_CORE_BUILD_TESTS)
     # Making sure test dependencies are enabled
     include(CTest)
     include(FetchContent)
