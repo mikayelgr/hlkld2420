@@ -1,6 +1,16 @@
 # LD2420 Core Library
 
-The core library provides platform-agnostic functionality for the HLK-LD2420 radar module. This is a standalone CMake project that can be built independently.
+The core library provides platform-agnostic functionality for the HLK-LD2420 radar module. This is a standalone CMake project that can be built independently and integrated into any platform.
+
+## Overview
+
+The core library handles:
+
+- **Protocol Parsing**: Complete LD2420 protocol implementation
+- **Frame Validation**: Header/footer verification and checksum handling
+- **Endianness**: Little-endian byte order handling on any architecture
+- **Memory Safety**: Fixed-size buffers with no dynamic allocation
+- **Error Handling**: Comprehensive status codes for all operations
 
 ## Building the Core Library
 
@@ -36,9 +46,28 @@ add_executable(your_app main.c)
 target_link_libraries(your_app PRIVATE ld2420_core)
 ```
 
-## Output Location
+## Output
 
 The compiled library (`libld2420_core.a`) will be in the build directory you created.
+
+## Running Tests
+
+The core library includes comprehensive unit tests using the Unity framework:
+
+```bash
+cd core
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DLD2420_CORE_BUILD_TESTS=ON
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Tests cover:
+
+- Frame parsing with valid and invalid data
+- Streaming parser state transitions
+- Error handling and edge cases
+- Endianness conversion
+- Buffer overflow protection
 
 ## API Overview
 
@@ -81,16 +110,17 @@ ld2420_status_t status = ld2420_stream_feed(
 
 **Use case**: Receiving data from UART, serial ports, or any transport that delivers bytes incrementally.
 
-## Streaming API Details
+## Streaming Parser Deep Dive
 
-The streaming parser handles the complexity of frame assembly from a byte stream:
+The streaming parser is designed for incremental processing of UART/serial data where bytes arrive asynchronously.
 
 ### Design Principles
 
-1. **Feed one byte at a time** - Each call to `ld2420_stream_feed()` accepts exactly one byte
-2. **Automatic buffer validation** - On each byte, the parser validates the buffer state
-3. **Callback on valid frames** - When a complete valid frame is assembled, your callback is invoked
-4. **Automatic error handling** - Corrupted frames are discarded and an error status is returned
+1. **Single-Byte Processing**: Each call to `ld2420_stream_feed()` accepts exactly one byte
+2. **Automatic Validation**: Buffer state is validated on each byte
+3. **Frame-Complete Callbacks**: Callback invoked only when a complete valid frame is assembled
+4. **Automatic Recovery**: Corrupted frames are discarded and parser resyncs to next header
+5. **Zero Allocation**: Fixed-size buffer with predictable memory usage
 
 ### State Management
 
@@ -154,8 +184,53 @@ int main(void) {
 
 ### Key Features
 
-- **Single linear buffer** - No dynamic allocation; fixed memory footprint
-- **Automatic resynchronization** - On frame corruption, automatically searches for the next valid header
-- **Noise tolerant** - Handles garbage data before frames
-- **Thread-unsafe by design** - Use one context per stream; synchronize if needed for multi-threaded access
-- **No callbacks on partial frames** - Callback is only invoked on complete, validated frames
+- **Single Linear Buffer**: No dynamic allocation; fixed memory footprint
+- **Automatic Resynchronization**: On frame corruption, automatically searches for the next valid header
+- **Noise Tolerant**: Handles garbage data before frames
+- **Thread-Unsafe by Design**: Use one context per stream; synchronize if needed for multi-threaded access
+- **No Partial Frame Callbacks**: Callback is only invoked on complete, validated frames
+
+### Common Use Cases
+
+**UART Interrupt Handler:**
+
+```c
+static ld2420_stream_t stream;
+
+void uart_irq_handler(void) {
+    while (uart_is_readable(uart0)) {
+        uint8_t byte = uart_getc(uart0);
+        ld2420_stream_feed(&stream, &byte, 1, on_frame);
+    }
+}
+```
+
+**Polling Loop:**
+
+```c
+ld2420_stream_t stream;
+ld2420_stream_init(&stream);
+
+while (1) {
+    if (uart_is_readable(uart0)) {
+        uint8_t byte = uart_getc(uart0);
+        ld2420_status_t status = ld2420_stream_feed(&stream, &byte, 1, on_frame);
+        if (status != LD2420_STATUS_OK) {
+            printf("Frame error: %d\n", status);
+        }
+    }
+}
+```
+
+**Serial Port Reading (Native):**
+
+```c
+int fd = open("/dev/ttyUSB0", O_RDWR);
+ld2420_stream_t stream;
+ld2420_stream_init(&stream);
+
+uint8_t byte;
+while (read(fd, &byte, 1) > 0) {
+    ld2420_stream_feed(&stream, &byte, 1, on_frame);
+}
+```

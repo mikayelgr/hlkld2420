@@ -1,28 +1,55 @@
 # LD2420 Examples
 
-This directory contains example projects demonstrating how to use the LD2420 library on different platforms.
+This directory contains complete, standalone example projects demonstrating how to use the LD2420 library on different platforms.
 
 ## Available Examples
 
-### Pico Example (`pico/`)
+### Raspberry Pi Pico (`pico/`)
 
-A complete example for Raspberry Pi Pico showing how to interface with the LD2420 sensor.
+A complete working example demonstrating LD2420 integration with Raspberry Pi Pico.
 
-**Key Features:**
+**Features:**
 
-- Fully independent build system using Pico toolchain
-- Can be built separately from the main library
-- Includes USB serial output for debugging
-- Ready-to-flash `.uf2` files
+- Independent build system using Pico SDK
+- USB serial output for debugging and monitoring
+- Command sending and response handling
+- Demonstrates initialization, configuration, and data processing
+- Generates ready-to-flash `.uf2` files
 
-See [`pico/README.md`](pico/README.md) for build instructions.
+**What it demonstrates:**
 
-## Building Examples
+- UART initialization and configuration
+- Sending commands to LD2420 module
+- Receiving and processing responses
+- Frame callback handling
+- LED indication for activity
 
-Each example is designed to be built independently with its own toolchain. Navigate to the specific example directory and follow its README instructions.
+See [`pico/README.md`](pico/README.md) for detailed build and usage instructions.
 
-**Note:** Examples are **not** part of the main project's CMake build. This is intentional to keep different toolchains isolated.
+## Building Philosophy
 
-## Adding More Examples
+Each example is a **standalone project** with its own build system. This design:
 
-Future examples for other platforms (ESP32, STM32, native Linux, etc.) can be added as separate subdirectories following the same pattern.
+- Allows independent compilation with platform-specific toolchains
+- Makes examples easy to copy into your own projects
+- Avoids cross-toolchain complications in the main build
+- Demonstrates real-world integration patterns
+
+## Using Examples as Templates
+
+Examples are designed to be copied and modified for your projects:
+
+1. Copy the example directory to your project
+2. Modify paths in `CMakeLists.txt` to point to the LD2420 library
+3. Customize the application code for your needs
+4. Build with the platform's toolchain
+
+## Future Examples
+
+Planned examples for additional platforms:
+
+- **Native/Linux**: Command-line tool for serial communication
+- **ESP32**: UART integration with ESP-IDF
+- **Arduino**: Platform-agnostic Arduino wrapper
+
+Contributions welcome!
