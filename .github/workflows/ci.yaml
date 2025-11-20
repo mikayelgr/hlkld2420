@@ -7,9 +7,6 @@ on:
             - "core/**"
             - "include/**"
             - "platform/**"
-            - "tests/**"
-            - "CMakeLists.txt"
-            - "CMakePresets.json"
             - "cmake/**"
             - ".github/workflows/ci.yaml"
 
