@@ -228,12 +228,12 @@ extern "C"
         if (uart_instance == NULL || buffer == NULL || buffer_size == 0)
         {
             mutex_exit(&ld2420_uart_tx_mutex);
-            return LD2420_ERROR_INVALID_ARGUMENTS;
+            return LD2420_STATUS_ERROR_INVALID_ARGUMENTS;
         }
 
         uart_write_blocking(uart_instance, buffer, buffer_size);
         mutex_exit(&ld2420_uart_tx_mutex);
-        return LD2420_OK;
+        return LD2420_STATUS_OK;
     }
 
     const ld2420_status_t ld2420_pico_init(
@@ -245,14 +245,14 @@ extern "C"
         if (!validate_uart_pin_pair_instance(tx_pin, rx_pin, uart_instance))
         {
             printf("ERROR: Invalid TX/RX pin pair (%d, %d) for the specified UART instance\n", tx_pin, rx_pin);
-            return LD2420_ERROR_INVALID_ARGUMENTS;
+            return LD2420_STATUS_ERROR_INVALID_ARGUMENTS;
         }
 
         int8_t idx = decide_uart_instance_number(uart_instance);
         if (idx < 0)
         {
             printf("ERROR: Unable to decide UART instance number\n");
-            return LD2420_ERROR_INVALID_ARGUMENTS;
+            return LD2420_STATUS_ERROR_INVALID_ARGUMENTS;
         }
 
         // Disable interrupts first to prevent data from being buffered during init
@@ -303,14 +303,14 @@ extern "C"
             break;
         default:
             printf("ERROR: Unknown UART instance number %d\n", idx);
-            return LD2420_ERROR_INVALID_ARGUMENTS | LD2420_ERROR_UNKNOWN;
+            return LD2420_STATUS_ERROR_INVALID_ARGUMENTS | LD2420_STATUS_ERROR_UNKNOWN;
         }
 
         // Set the GPIO pin mux to the UART
         // TX and RX pins need to be configured for UART function
         gpio_set_function(tx_pin, GPIO_FUNC_UART);
         gpio_set_function(rx_pin, GPIO_FUNC_UART);
-        return LD2420_OK;
+        return LD2420_STATUS_OK;
     }
 
     const ld2420_status_t ld2420_pico_deinit(uart_inst_t *uart_instance)
@@ -321,14 +321,14 @@ extern "C"
         else if (idx == 1)
             irq_set_enabled(UART1_IRQ, false);
         else
-            return LD2420_ERROR_INVALID_ARGUMENTS;
+            return LD2420_STATUS_ERROR_INVALID_ARGUMENTS;
 
         uart_set_irq_enables(uart_instance, false, false);
         uart_deinit(uart_instance);
 
         __init_uart_rx_buffer__(idx);
         rx_callbacks[idx] = NULL;
-        return LD2420_OK;
+        return LD2420_STATUS_OK;
     }
 
 #ifdef __cplusplus
