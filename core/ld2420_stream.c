@@ -9,7 +9,7 @@
  * 4. If a frame is corrupted, discard it and return error status
  *
  * State Machine
- * ------------- 
+ * -------------
  * - NOT_SYNCED: Scanning for the 4-byte header
  * - SYNCED: Header found, accumulating frame bytes
  * - FRAME_READY: Complete frame assembled, footer validated, ready to parse
@@ -187,13 +187,16 @@ ld2420_status_t ld2420_stream_feed(
         }
 
         // Frame is complete and footer is valid; parse metadata
-        uint16_t out_frame_size = 0, out_cmd_echo = 0, out_status = 0;
+        uint16_t out_frame_size = 0, out_cmd_echo = 0, out_status = 0,
+                 opt_out_param_name = 0, opt_out_param_value = 0;
         ld2420_status_t parse_status = ld2420_parse_rx_buffer(
             s->buffer,
             (uint8_t)s->expected_total_size,
             &out_frame_size,
             &out_cmd_echo,
-            &out_status);
+            &out_status,
+            &opt_out_param_name,
+            &opt_out_param_value);
 
         if (parse_status == LD2420_STATUS_OK)
         {

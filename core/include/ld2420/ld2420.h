@@ -117,7 +117,10 @@ extern "C"
         // Pointers to output variables
         uint16_t *out_frame_size,
         uint16_t *out_cmd_echo,
-        uint16_t *out_status);
+        uint16_t *out_status,
+        // Optional parameters for additional parsed values, if needed.
+        uint16_t *opt_out_param_name,
+        uint16_t *opt_out_param_value);
 #ifdef __cplusplus
 }
 #endif

@@ -128,7 +128,9 @@ ld2420_status_t ld2420_parse_rx_buffer(
 
     uint16_t *out_frame_size,
     uint16_t *out_cmd_echo,
-    uint16_t *out_status)
+    uint16_t *out_status,
+    uint16_t *opt_out_param_name,
+    uint16_t *opt_out_param_value)
 {
     // We need to make sure that the input we are dealing with is correct.
     if (in_raw_rx_buffer == NULL || in_raw_rx_buffer_size < 0)
@@ -163,5 +165,20 @@ ld2420_status_t ld2420_parse_rx_buffer(
     *out_cmd_echo = *(uint8_t *)(in_raw_rx_buffer + PACKET_CMD_ECHO_OFFSET);
     *out_status = *(uint8_t *)(in_raw_rx_buffer + PACKET_STATUS_OFFSET);
 #endif
+
+    // If the optional parameters are provided, we can extract them as well.
+    if (opt_out_param_name != NULL && opt_out_param_value != NULL)
+    {
+        // The parameters are located after the status field, so we can read them directly.
+        // The parameters are 2 bytes each, so we can read them as follows:
+#ifdef LD2420_PLATFORM_BE
+        *opt_out_param_name = read_le16(in_raw_rx_buffer + PACKET_STATUS_OFFSET + 2);
+        *opt_out_param_value = read_le16(in_raw_rx_buffer + PACKET_STATUS_OFFSET + 4);
+#else
+        *opt_out_param_name = *(uint16_t *)(in_raw_rx_buffer + PACKET_STATUS_OFFSET + 2);
+        *opt_out_param_value = *(uint16_t *)(in_raw_rx_buffer + PACKET_STATUS_OFFSET + 4);
+#endif
+    }
+
     return LD2420_STATUS_OK;
 }
