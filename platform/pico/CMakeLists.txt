@@ -17,7 +17,7 @@ project(ld2420_pico VERSION 1.0.0 LANGUAGES C CXX ASM)
 pico_sdk_init()
 
 message(STATUS "Building ld2420_core from source")
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../core ${CMAKE_CURRENT_BINARY_DIR}/ld2420_core)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../src ${CMAKE_CURRENT_BINARY_DIR}/ld2420_core)
 
 # Define the Pico implementation library
 add_library(ld2420_pico
